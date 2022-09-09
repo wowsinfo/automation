@@ -17,15 +17,18 @@ def log(message):
         os.mkdir(log_path)
     today = time.strftime("%Y-%m-%d")
     log_file = os.path.join(log_path, today + ".log")
+    # time string with milliseconds
+    time_str = time.strftime("%H:%M:%S") + ".{:03d}".format(int(time.time() * 100000) % 100000)
     with open(log_file, "a") as f:
-        f.write("INFO: " + message + "\n")
+        f.write("{}==={}\n".format(time_str, message))
     print(message)
 
 
 if __name__ == '__main__':
     # the machine boots up at around 10:00, only run this if it is within 10 mins
     if 600 <= int(time.strftime("%H%M")) <= 610:
-        shutdown()
         log("Running tasks")
+        log("Check for game updates")
+
     else:
         log("Tasks will not run at {}".format(time.strftime("%H:%M")))
