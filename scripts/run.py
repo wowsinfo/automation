@@ -1,12 +1,8 @@
+import email
 import os
-import logging
+import sys
 import time
-
-
-def shutdown():
-    """Shutdown the system after 2 min"""
-    os.system("shutdown -s -t 120")
-
+from mail import Email
 
 def log(message):
     """
@@ -23,12 +19,53 @@ def log(message):
         f.write("{}==={}\n".format(time_str, message))
     print(message)
 
+def has_update(path: str, timeout: int = 10) -> bool:
+    log("Checking for {} update".format(path))
+    counter = 0
+    while True:
+        # check for game_info.xml, get avilable and installed string from <version name="client" available="0.11.8.0.6223552" installed="0.11.8.0.6223552"/>
+        game_info_path = os.path.join(path, "game_info.xml")
+        if not os.path.exists(game_info_path):
+            log("game_info.xml not found")
+            sys.exit(1)
+        with open(game_info_path, "r") as f:
+            game_info = f.read()
+        available = game_info.split('available="')[1].split('"')[0]
+        installed = game_info.split('installed="')[1].split('"')[0]
+        log("available: {}, installed: {}".format(available, installed))
+        if available != installed:
+            log("Update available for {}".format(path))
+            email = Email()
+            email.send("Update available", path)
+            return True
+
+        time.sleep(5)
+        counter += 5
+        if counter >= timeout:
+            log("No update found after {} seconds".format(timeout))
+            return False
+
+def wait_for_update(path: str) -> None:
+    log("Waiting for update to finish")
+    while True:
+        if not has_update(path):
+            log("Update finished")
+            email = Email()
+            email.send("Update finished", path)
+            return
+        time.sleep(60)
 
 if __name__ == '__main__':
-    # the machine boots up at around 10:00, only run this if it is within 10 mins
-    if 600 <= int(time.strftime("%H%M")) <= 610:
-        log("Running tasks")
-        log("Check for game updates")
+    # read from game.path
+    try:
+        with open("game.path", "r") as f:
+            public_path = f.readline().strip()
+            test_path = f.readline().strip()
 
-    else:
-        log("Tasks will not run at {}".format(time.strftime("%H:%M")))
+        # check for update
+        has_update(public_path)
+        has_update(test_path)
+        sys.exit(0)
+    except Exception as e:
+        log("Error: {}".format(e))
+        sys.exit(1)
