@@ -55,6 +55,10 @@ def wait_for_update(path: str) -> None:
             return
         time.sleep(60)
 
+def generate(path: str) -> None:
+    log("Generating data from {}".format(path))
+    
+
 if __name__ == '__main__':
     # read from game.path
     try:
