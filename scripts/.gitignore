@@ -1,2 +1,12 @@
 *.config
 *.path
+*.json
+
+# unpack data
+content/
+assets/
+gui/
+langs/
+spaces/
+__pycache__/
+app/assets/

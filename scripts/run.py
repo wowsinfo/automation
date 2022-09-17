@@ -1,7 +1,9 @@
-import email
+from cProfile import run
 import os
 import sys
 import time
+import subprocess
+import traceback
 from mail import Email
 
 def log(message):
@@ -18,6 +20,19 @@ def log(message):
     with open(log_file, "a") as f:
         f.write("{}==={}\n".format(time_str, message))
     print(message)
+
+def run_command(command):
+    """Run a command and return the output"""
+    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    output, error = p.communicate()
+    output = output.decode("utf-8").replace("\r\n", "\n")
+    error = error.decode("utf-8").replace("\r\n", "\n")
+    log(output)
+    log(error)
+
+    if 'error' in output.lower() or 'error' in error.lower():
+        raise Exception("Error running command: {}".format(command))
+    return p.returncode == 0
 
 def has_update(path: str, timeout: int = 10) -> bool:
     log("Checking for {} update".format(path))
@@ -57,8 +72,12 @@ def wait_for_update(path: str) -> None:
 
 def generate(path: str) -> None:
     log("Generating data from {}".format(path))
+    python_path = 'C:/Users/nateq/Documents/GitHub/automation/.env/Scripts/python.exe'
+    run_command(python_path + ' clean.py')
+    run_command(python_path + ' unpack.py ' + path)
+    run_command(python_path + ' generate.py')
+    run_command(python_path + ' additional.py --all')
     
-
 if __name__ == '__main__':
     # read from game.path
     try:
@@ -67,9 +86,10 @@ if __name__ == '__main__':
             test_path = f.readline().strip()
 
         # check for update
-        has_update(public_path)
-        has_update(test_path)
+        # has_update(public_path)
+        # has_update(test_path)
+        generate(public_path)
         sys.exit(0)
     except Exception as e:
-        log("Error: {}".format(e))
+        traceback.print_exc()
         sys.exit(1)

@@ -3,7 +3,6 @@ Send email with smtplib
 """
 
 import smtplib
-import os
 from email.mime.text import MIMEText
 
 class Email:
