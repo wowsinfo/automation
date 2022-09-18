@@ -7,30 +7,56 @@ import json
 import os
 
 
-def compare_new():
+def compare_new(public_test: bool) -> None:
     # make sure both wowsinfo.json and wowsinfo.json.bak exist
-    if not os.path.isfile('wowsinfo.json') or not os.path.isfile('wowsinfo.json.bak'):
-        raise Exception('wowsinfo.json or wowsinfo.json.bak does not exist. place the last version of it in the same directory as this script.')
+    if not os.path.isfile('wowsinfo.json'):
+        raise Exception('wowsinfo.json not found')
+
+    backup_file = 'wowsinfo.json.pt' if public_test else 'wowsinfo.json.live'
+    if not os.path.isfile(backup_file):
+        raise Exception(backup_file + ' not found')
 
     # read wowsinfo.json and wowsinfo.json.bak
     with open('wowsinfo.json', 'r', encoding='utf8') as info:
         wowsinfo = json.load(info)
-    with open('wowsinfo.json.bak', 'r', encoding='utf8') as info_old:
+    with open(backup_file, 'r', encoding='utf8') as info_old:
         wowsinfo_bak = json.load(info_old)
+    with open('lang.json', 'r', encoding='utf8') as lang:
+        english_lang = json.load(lang)['en']
 
-    # compare wowsinfo.json and wowsinfo.json.bak
-    for item in wowsinfo:
-        # not all data needs to be compared
-        if item in ['number', 'alias', 'projectiles']:
-            continue
-        for data in wowsinfo[item]:
-            if data not in wowsinfo_bak[item]:
-                wowsinfo[item][data]['added'] = 1
-                print(item, data, 'added')
-            else:
-                if 'added' in wowsinfo[item][data]:
-                    print(item, data, 'removed')
-                    del wowsinfo[item][data]['added']
+    with open('changes.log', 'w', encoding='utf8') as changes:
+        # compare wowsinfo.json and wowsinfo.json.bak
+        for item in wowsinfo:
+            # not all data needs to be compared
+            if item in ['number', 'alias', 'projectiles']:
+                continue
+            # check added items
+            for data in wowsinfo[item]:
+                if data not in wowsinfo_bak[item]:
+                    wowsinfo[item][data]['added'] = 1
+                    try:
+                        # get ids_name from data
+                        ids_name = wowsinfo[item][data]['name']
+                        name = english_lang[ids_name]
+                    except KeyError:
+                        name = data
+                    print('- added', item, name, '({})'.format(data))
+                    changes.write('- added {} {} ({})'.format(item, name, data))
+                else:
+                    # remove the added key
+                    if 'added' in wowsinfo[item][data]:
+                        del wowsinfo[item][data]['added']
+            # also check removed
+            for data in wowsinfo_bak[item]:
+                if data not in wowsinfo[item]:
+                    try:
+                        # get ids_name from data
+                        ids_name = wowsinfo_bak[item][data]['name']
+                        name = english_lang[ids_name]
+                    except KeyError:
+                        name = data
+                    print('- removed', item, name, '({})'.format(data))
+                    changes.write('- removed {} {} ({})\n'.format(item, name, data))
 
     # write wowsinfo.json
     with open('wowsinfo.json', 'w', encoding='utf8') as info:
@@ -38,4 +64,9 @@ def compare_new():
 
 
 if __name__ == '__main__':
-    compare_new()
+    import sys
+    if len(sys.argv) < 2:
+        raise Exception('Usage: %s <0 (pt) or 1 (live)>' % sys.argv[0])
+
+    public_test = int(sys.argv[1]) == 0
+    compare_new(public_test)

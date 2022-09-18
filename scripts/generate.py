@@ -1079,7 +1079,7 @@ class WoWsGenerate:
 
     # %%
 
-    def generate(self):
+    def generate(self, game_path: str):
         if self._params is None:
             raise Exception('Call read() first')
 
@@ -1261,6 +1261,14 @@ class WoWsGenerate:
         wowsinfo['game'] = self._game_info
         # wowsinfo['game_maps'] = game_maps
 
+        # read game_path to get the game version and if it is public test
+        game_info_path = os.path.join(game_path, "game_info.xml")
+        with open(game_info_path, 'r') as f:
+            game_info = f.read()
+            game_version = game_info.split('installed="')[1].split('"')[0]
+            public_test = '<id>WOWS.PT.PRODUCTION</id>' in game_info
+        wowsinfo['version'] = game_version + ('PT' if public_test else '')
+
         # TODO: to be added to app/data/
         self._write_json(wowsinfo, 'wowsinfo.json')
         print("Done")
@@ -1268,5 +1276,7 @@ class WoWsGenerate:
 
 # %%
 if __name__ == '__main__':
+    import sys
+    path = sys.argv[1]
     generate = WoWsGenerate()
-    generate.read().generate()
+    generate.read().generate(path)

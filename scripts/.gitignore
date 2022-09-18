@@ -1,6 +1,10 @@
 *.config
 *.path
 *.json
+*.bak
+*.live
+*.pt
+*.log
 
 # unpack data
 content/

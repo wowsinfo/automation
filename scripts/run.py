@@ -103,8 +103,20 @@ def generate(path: str) -> None:
     python_path = 'C:/Users/nateq/Documents/GitHub/automation/.env/Scripts/python.exe'
     run_command(python_path + ' clean.py')
     run_command(python_path + ' unpack.py ' + path)
-    run_command(python_path + ' generate.py')
+    run_command(python_path + ' generate.py ' + path)
     run_command(python_path + ' additional.py --all')
+
+    if public_test:
+        if os.path.exists("wowsinfo.json.pt"):
+            run_command(python_path + ' check_new.py 0')
+        shutil.copyfile("wowsinfo.json", "wowsinfo.json.pt")
+    else:
+        if os.path.exists("wowsinfo.json.live"):
+            run_command(python_path + ' check_new.py 1')
+        shutil.copyfile("wowsinfo.json", "wowsinfo.json.live")
+
+    with open('changes.log', 'r', encoding='utf8') as f:
+        changes = f.read().strip()
 
     # move to data folder, put it under the same folder as automation
     folder_name = 'data/public_test' if public_test else 'data/live'
@@ -116,11 +128,11 @@ def generate(path: str) -> None:
     # commit and push
     suffix = 'PT' if public_test else ''
     run_command('cd {} && git add .'.format(data_path))
-    run_command('cd {} && git commit -m "Update {} {}"'.format(data_path, version, suffix))
+    run_command('cd {} && git commit -m "Update {} {}\n\n{}"'.format(data_path, version, suffix, changes))
 
     # tag the latest commit
     tag = version + suffix
-    run_command('cd {} && git tag -a {} -m "Update {} {}"'.format(data_path, tag, version, suffix))
+    run_command('cd {} && git tag -a {} -m "Update {} {}\n\n{}"'.format(data_path, tag, version, suffix, changes))
 
 def push_github() -> None:
     """
