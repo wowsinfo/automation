@@ -28,7 +28,7 @@ def compare_new(public_test: bool) -> None:
         # compare wowsinfo.json and wowsinfo.json.bak
         for item in wowsinfo:
             # not all data needs to be compared
-            if item in ['number', 'alias', 'projectiles']:
+            if item in ['number', 'alias', 'projectiles', 'version']:
                 continue
             # check added items
             for data in wowsinfo[item]:

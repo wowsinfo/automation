@@ -77,6 +77,33 @@ def wait_for_update(path: str) -> None:
             return
         time.sleep(60)
 
+def save_latest_version(path: str, pt: bool) -> None:
+    log("Saving latest version")
+    with open(os.path.join(path, "game_info.xml"), "r") as f:
+        game_info = f.read()
+    version = game_info.split('available="')[1].split('"')[0]
+    output_name = "latest_version.txt" if not pt else "latest_version_pt.txt"
+    with open(output_name, "w") as f:
+        f.write(version)
+
+def check_if_different(path: str, pt: bool) -> bool:
+    log("Checking if different")
+    with open(os.path.join(path, "game_info.xml"), "r") as f:
+        game_info = f.read()
+    version = game_info.split('available="')[1].split('"')[0]
+
+    output_name = "latest_version.txt" if not pt else "latest_version_pt.txt"
+    if not os.path.exists(output_name):
+        return False
+
+    with open(output_name, "r") as f:
+        latest_version = f.read().strip()
+    if version != latest_version:
+        log("Different version")
+        return True
+    log("Same version")
+    return False
+
 def move(src: str, dest: str) -> None:
     """
     Move from src to dest, if dest exists, delete it first
@@ -125,21 +152,24 @@ def generate(path: str) -> None:
     move('./wowsinfo.json', os.path.join(data_path, 'app/data/wowsinfo.json'))
     move('./lang.json', os.path.join(data_path, 'app/lang/lang.json'))
 
+    # copy over the raw GameParams.data over to the folder
+    move('./content/GameParams.data', os.path.join(data_path, 'GameParams.data'))
+
     # commit and push
     suffix = 'PT' if public_test else ''
     run_command('cd {} && git add .'.format(data_path))
-    run_command('cd {} && git commit -m "Update {} {}\n\n{}"'.format(data_path, version, suffix, changes))
+    run_command('cd {} && git commit -m "Update {} {}\n{}"'.format(data_path, version, suffix, changes))
 
     # tag the latest commit
     tag = version + suffix
-    run_command('cd {} && git tag -a {} -m "Update {} {}\n\n{}"'.format(data_path, tag, version, suffix, changes))
+    run_command('cd {} && git tag -a {} -m "Update {} {}\n{}"'.format(data_path, tag, version, suffix, changes))
 
 def push_github() -> None:
     """
     Push changes of data repo to github
     """
     data_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-    run_command('cd {} && git push origin master --tags'.format(data_path))
+    run_command('cd {}/data && git push origin master --tags'.format(data_path))
     
 if __name__ == '__main__':
     # read from game.path
@@ -155,17 +185,29 @@ if __name__ == '__main__':
                 wait_for_update(public_path)
                 generate(public_path)
                 hasUpdate = True
+            else:
+                # check if we missed the update
+                if check_if_different(public_path, False):
+                    generate(public_path)
+                    hasUpdate = True
+            save_latest_version(public_path, False)
         except Exception as e:
             # duplicate tag maybe
             traceback.print_exc()
             log(e)
             hasError = True
-        
+        print()
         try:
             if has_update(test_path):
                 wait_for_update(test_path)
                 generate(test_path)
                 hasUpdate = True
+            else:
+                # check if we missed the update
+                if check_if_different(test_path, True):
+                    generate(test_path)
+                    hasUpdate = True
+            save_latest_version(test_path, True)
         except Exception as e:
             traceback.print_exc()
             log(e)

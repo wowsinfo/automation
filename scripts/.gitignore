@@ -5,6 +5,7 @@
 *.live
 *.pt
 *.log
+*.txt
 
 # unpack data
 content/
