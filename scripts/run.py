@@ -111,7 +111,10 @@ def move(src: str, dest: str) -> None:
     log("Moving {} to {}".format(src, dest))
     if os.path.exists(dest):
         log("Deleting {}".format(dest))
-        shutil.rmtree(dest)
+        if os.path.isfile(dest):
+            os.remove(dest)
+        else:
+            shutil.rmtree(dest)
     folder_path = os.path.dirname(dest)
     if not os.path.exists(folder_path):
         log("Creating {}".format(folder_path))
@@ -158,11 +161,11 @@ def generate(path: str) -> None:
     # commit and push
     suffix = 'PT' if public_test else ''
     run_command('cd {} && git add .'.format(data_path))
-    run_command('cd {} && git commit -m "Update {} {}\n{}"'.format(data_path, version, suffix, changes))
+    run_command('cd {} && git commit -m "Update {} {}" -m "{}"'.format(data_path, version, suffix, changes))
 
     # tag the latest commit
     tag = version + suffix
-    run_command('cd {} && git tag -a {} -m "Update {} {}\n{}"'.format(data_path, tag, version, suffix, changes))
+    run_command('cd {} && git tag -a {} -m "Update {} {}" -m "{}"'.format(data_path, tag, version, suffix, changes))
 
 def push_github() -> None:
     """

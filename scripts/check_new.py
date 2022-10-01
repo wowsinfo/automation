@@ -25,6 +25,7 @@ def compare_new(public_test: bool) -> None:
         english_lang = json.load(lang)['en']
 
     with open('changes.log', 'w', encoding='utf8') as changes:
+        has_changes = False
         # compare wowsinfo.json and wowsinfo.json.bak
         for item in wowsinfo:
             # not all data needs to be compared
@@ -42,6 +43,7 @@ def compare_new(public_test: bool) -> None:
                         name = data
                     print('- added', item, name, '({})'.format(data))
                     changes.write('- added {} {} ({})'.format(item, name, data))
+                    has_changes = True
                 else:
                     # remove the added key
                     if 'added' in wowsinfo[item][data]:
@@ -57,6 +59,11 @@ def compare_new(public_test: bool) -> None:
                         name = data
                     print('- removed', item, name, '({})'.format(data))
                     changes.write('- removed {} {} ({})\n'.format(item, name, data))
+                    has_changes = True
+        
+        if not has_changes:
+            print('No changes found')
+            changes.write('No Changes')
 
     # write wowsinfo.json
     with open('wowsinfo.json', 'w', encoding='utf8') as info:
