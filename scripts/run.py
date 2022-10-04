@@ -57,8 +57,6 @@ def has_update(path: str, timeout: int = 60) -> bool:
         log("available: {}, installed: {}".format(available, installed))
         if available != installed:
             log("Update available for {}".format(path))
-            email = Email()
-            email.send("Update available", path)
             return True
 
         time.sleep(5)
