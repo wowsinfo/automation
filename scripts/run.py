@@ -27,8 +27,8 @@ def run_command(command):
     """Run a command and return the output"""
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, error = p.communicate()
-    output = output.decode("utf-8").replace("\r\n", "\n")
-    error = error.decode("utf-8").replace("\r\n", "\n")
+    output = output.decode("utf-8", errors='ignore').replace("\r\n", "\n")
+    error = error.decode("utf-8", errors='ignore').replace("\r\n", "\n")
     log(output)
     log(error)
 
@@ -160,6 +160,8 @@ def generate(path: str) -> None:
     suffix = 'PT' if public_test else ''
     run_command('cd {} && git add .'.format(data_path))
     run_command('cd {} && git commit -m "Update {} {}" -m "{}"'.format(data_path, version, suffix, changes))
+    email = Email()
+    email.send("Commit {} {}".format(version, suffix), path + '\n\n' + changes)
 
     # tag the latest commit
     tag = version + suffix

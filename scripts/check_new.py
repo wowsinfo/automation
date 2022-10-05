@@ -41,8 +41,12 @@ def compare_new(public_test: bool) -> None:
                         name = english_lang[ids_name]
                     except KeyError:
                         name = data
+
+                    # fix unicode error
+                    name = name.encode('utf-8')
+                    # data may contain invalid
                     print('- added', item, name, '({})'.format(data))
-                    changes.write('- added {} {} ({})'.format(item, name, data))
+                    changes.write('- added {} {} ({})\n'.format(item, name, data))
                     has_changes = True
                 else:
                     # remove the added key
@@ -68,7 +72,6 @@ def compare_new(public_test: bool) -> None:
     # write wowsinfo.json
     with open('wowsinfo.json', 'w', encoding='utf8') as info:
         json.dump(wowsinfo, info, ensure_ascii=False)
-
 
 if __name__ == '__main__':
     import sys
