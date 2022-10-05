@@ -1095,6 +1095,7 @@ class WoWsGenerate:
         abilitites = {}
         alias = {}
         ship_index = {}
+        camoboost = {}
         for key in self._params_keys:
             item = self._params[key]
             item_type = item['typeinfo']['type']
@@ -1108,6 +1109,9 @@ class WoWsGenerate:
             #     self._write_json(item, '{}.json'.format(key_name))
             #     # print(self._unpack_ship_params(item, params))
             #     exit(1)
+
+            if item_species == 'Camoboost':
+                camoboost[item['id']] = item
 
             if item_type == 'Ship':
                 ships.update(self._unpack_ship_params(item, self._params))
@@ -1155,6 +1159,13 @@ class WoWsGenerate:
         # save everything
         if len(ships) == 0:
             raise Exception('No ships found. Data is not valid')
+
+        # add the name in Chinese as title
+        for camo in camoboost:
+            curr = camoboost[camo]
+            curr['title'] = self._lang_sg[self._IDS(curr['name'])]
+        print("There are {} camoboosts in the game".format(len(camoboost)))
+        self._write_json(camoboost, 'camoboost.json')
 
         print("There are {} ships in the game".format(len(ships)))
         self._write_json(ships, 'ships.json')
