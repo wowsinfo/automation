@@ -42,8 +42,8 @@ def compare_new(public_test: bool) -> None:
                     except KeyError:
                         name = data
 
-                    # fix unicode error
-                    name = name.encode('utf-8')
+                    # fix unicode error, remove invalid characters
+                    name = name.encode('ascii', 'ignore').decode('ascii')
                     # data may contain invalid
                     print('- added', item, name, '({})'.format(data))
                     changes.write('- added {} {} ({})\n'.format(item, name, data))

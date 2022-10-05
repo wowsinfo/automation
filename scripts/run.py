@@ -146,6 +146,10 @@ def generate(path: str) -> None:
     with open('changes.log', 'r', encoding='utf8') as f:
         changes = f.read().strip()
 
+    # convert changes to commit messages
+    raw_changes_string = changes
+    changes = ' '.join(['-m "{}"'.format(x) for x in changes.split('\n')])
+
     # move to data folder, put it under the same folder as automation
     folder_name = 'data/public_test' if public_test else 'data/live'
     data_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), folder_name)
@@ -159,13 +163,13 @@ def generate(path: str) -> None:
     # commit and push
     suffix = 'PT' if public_test else ''
     run_command('cd {} && git add .'.format(data_path))
-    run_command('cd {} && git commit -m "Update {} {}" -m "{}"'.format(data_path, version, suffix, changes))
+    run_command('cd {} && git commit -m "Update {} {}" {}'.format(data_path, version, suffix, changes))
     email = Email()
-    email.send("Commit {} {}".format(version, suffix), path + '\n\n' + changes)
+    email.send("Commit {} {}".format(version, suffix), path + '\n\n' + raw_changes_string)
 
     # tag the latest commit
     tag = version + suffix
-    run_command('cd {} && git tag -a {} -m "Update {} {}" -m "{}"'.format(data_path, tag, version, suffix, changes))
+    run_command('cd {} && git tag -a {} -m "Update {} {}" {}'.format(data_path, tag, version, suffix, changes))
 
 def push_github() -> None:
     """
