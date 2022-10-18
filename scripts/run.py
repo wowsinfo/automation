@@ -159,6 +159,9 @@ def generate(path: str) -> None:
 
     # copy over the raw GameParams.data over to the folder
     move('./content/GameParams.data', os.path.join(data_path, 'GameParams.data'))
+    # copy over extra json files to the shared folder
+    move('./camoboost.json', os.path.join(data_path, 'shared/camoboost.json'))
+    move('./dog_tag.json', os.path.join(data_path, 'shared/dogtag.json'))
 
     # commit and push
     suffix = 'PT' if public_test else ''

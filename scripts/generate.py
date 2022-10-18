@@ -1096,6 +1096,7 @@ class WoWsGenerate:
         alias = {}
         ship_index = {}
         camoboost = {}
+        dog_tag = {}
         for key in self._params_keys:
             item = self._params[key]
             item_type = item['typeinfo']['type']
@@ -1112,6 +1113,13 @@ class WoWsGenerate:
 
             if item_species == 'Camoboost':
                 camoboost[item['id']] = item
+
+            if item_type == 'DogTag':
+                dog_tag_index = item['index']
+                dog_tag_id = item['id']
+                dog_tag[dog_tag_id] = {
+                    'index': dog_tag_index,
+                }
 
             if item_type == 'Ship':
                 ships.update(self._unpack_ship_params(item, self._params))
@@ -1166,6 +1174,8 @@ class WoWsGenerate:
             curr['title'] = self._lang_sg[self._IDS(curr['name'])]
         print("There are {} camoboosts in the game".format(len(camoboost)))
         self._write_json(camoboost, 'camoboost.json')
+        print("There are {} dog tags in the game".format(len(dog_tag)))
+        self._write_json(dog_tag, 'dog_tag.json')
 
         print("There are {} ships in the game".format(len(ships)))
         self._write_json(ships, 'ships.json')
