@@ -13,5 +13,6 @@ assets/
 gui/
 langs/
 spaces/
+scripts/
 __pycache__/
 app/assets/

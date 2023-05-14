@@ -162,6 +162,8 @@ def generate(path: str) -> None:
     # copy over extra json files to the shared folder
     move('./camoboost.json', os.path.join(data_path, 'shared/camoboost.json'))
     move('./dog_tag.json', os.path.join(data_path, 'shared/dogtag.json'))
+    # copy over scripts to scripts folder
+    move('./scripts', os.path.join(data_path, 'scripts'))
 
     # commit and push
     suffix = 'PT' if public_test else ''
