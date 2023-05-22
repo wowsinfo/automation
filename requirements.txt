@@ -1,5 +1,5 @@
 autopep8
 ipykernel
 requests
-wowsunpack
+wowsunpack==0.1.7
 requests
