@@ -190,6 +190,11 @@ if __name__ == '__main__':
             public_path = f.readline().strip()
             test_path = f.readline().strip()
 
+        # force update if needed
+        # generate(public_path)
+        # generate(test_path)
+        # exit()
+
         hasError = False
         hasUpdate = False
         try:

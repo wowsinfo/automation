@@ -867,6 +867,9 @@ class WoWsGenerate:
         elif projectile_type == 'Wave':
             # TODO: we don't do this for now
             pass
+        elif projectile_type == 'PlaneSeaMine':
+            # TODO: we don't do this for now
+            pass
         else:
             # unknown projectile type
             raise Exception(
