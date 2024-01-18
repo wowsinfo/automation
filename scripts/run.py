@@ -148,7 +148,10 @@ def generate(path: str) -> None:
 
     # convert changes to commit messages
     raw_changes_string = changes
-    changes = ' '.join(['-m "{}"'.format(x) for x in changes.split('\n')])
+    # escape " to \"
+    def escape(x):
+        return x.replace('"', '\\"')
+    changes = ' '.join(['-m "{}"'.format(escape(x)) for x in changes.split('\n')])
 
     # move to data folder, put it under the same folder as automation
     folder_name = 'data/public_test' if public_test else 'data/live'
@@ -184,6 +187,12 @@ def push_github() -> None:
     run_command('cd {}/data && git push origin master --tags'.format(data_path))
     
 if __name__ == '__main__':
+    # remove the timeout while testing
+    wait_timeout = 60
+    if len(sys.argv) > 1:
+        if sys.argv[1] == '-f':
+            wait_timeout = 1
+
     # read from game.path
     try:
         with open("game.path", "r") as f:
@@ -198,13 +207,14 @@ if __name__ == '__main__':
         hasError = False
         hasUpdate = False
         try:
-            if has_update(public_path):
+            if has_update(public_path, wait_timeout):
                 wait_for_update(public_path)
                 generate(public_path)
                 hasUpdate = True
             else:
                 # check if we missed the update
                 if check_if_different(public_path, False):
+                    wait_for_update(public_path)
                     generate(public_path)
                     hasUpdate = True
             save_latest_version(public_path, False)
@@ -215,7 +225,7 @@ if __name__ == '__main__':
             hasError = True
         print()
         try:
-            if has_update(test_path):
+            if has_update(test_path, wait_timeout):
                 wait_for_update(test_path)
                 generate(test_path)
                 hasUpdate = True
