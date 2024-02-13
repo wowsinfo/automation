@@ -41,6 +41,8 @@ if __name__ == "__main__":
         # compress app folder
         print("Compressing app folder...")
         os.system(r"..\pngquant\pngquant.exe .\app\assets\*\*.png --ext .png --force")
+        # compare other resources
+        os.system(r"..\pngquant\pngquant.exe .\gui\dogTags\medium\*.png --ext .png --force")
     except Exception as e:
         print("Error: %s" % e)
         traceback.print_exc()
