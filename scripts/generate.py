@@ -888,7 +888,7 @@ class WoWsGenerate:
         self._lang_keys.append(name)
         aircraft['name'] = name
 
-        if aircraft_type in ['Fighter', 'Bomber', 'Skip', 'Scout', 'Dive']:
+        if aircraft_type in ['Fighter', 'Bomber', 'Skip', 'Scout', 'Dive', 'Smoke']:
             hangarSettings = item['hangarSettings']
             max_aircraft = hangarSettings['maxValue']
             aircraft['health'] = item['maxHealth']
