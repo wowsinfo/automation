@@ -62,8 +62,8 @@ def make_additional():
     """
     Merges all the data into one file
     """
-    with open('ship_battles_raw.json', 'r') as f:
-        ship_battles_raw = json.load(f)
+    # with open('ship_battles_raw.json', 'r') as f:
+    #     ship_battles_raw = json.load(f)
     with open('personal_rating_raw.json', 'r') as f:
         personal_rating_raw = json.load(f)
 
@@ -83,8 +83,8 @@ def make_additional():
         formatted['damage'] = round(damage)
         formatted['frags'] = round(frags, ndigits=2)
         formatted['winrate'] = round(winrate, ndigits=2)
-        if ship in ship_battles_raw:
-            formatted['battles'] = int(ship_battles_raw[ship])
+        # if ship in ship_battles_raw:
+        #     formatted['battles'] = int(ship_battles_raw[ship])
         additional_dict[ship] = formatted
 
     with open('additional.json', 'w') as f:
