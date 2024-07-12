@@ -108,7 +108,7 @@ def merge_additional():
     print('Done.')
 
 def runAll():
-    get_ship_battles_raw()
+    # get_ship_battles_raw()
     get_personal_rating()
     make_additional()
     merge_additional()
