@@ -108,6 +108,8 @@ def merge_additional():
     print('Done.')
 
 def runAll():
+    # disabled for now
+    return
     # get_ship_battles_raw()
     get_personal_rating()
     make_additional()
