@@ -39,6 +39,7 @@ class WoWsGenerate:
     Helper functions
     """
 
+    #region helper functions
     def _read_lang(self, language: str) -> dict:
         return self._read_json('langs/{}_lang.json'.format(language))
 
@@ -144,11 +145,13 @@ class WoWsGenerate:
 
     def _IDS(self, key: str) -> str:
         return 'IDS_' + key.upper()
+    #endregion
 
     """
     Unpack helper functions
     """
 
+    # region Air Defense
     def _unpack_air_defense(self, module: dict, params: dict):
         """
         Unpack air defense info from module and return air_defense dict
@@ -233,7 +236,9 @@ class WoWsGenerate:
         if len(near) > 0:
             air_defense['near'] = near
         return air_defense
+    #endregion
 
+    #region Guns & Torpedoes
     def _unpack_guns_torpedoes(self, module: dict) -> dict:
         """
         Unpack guns and torpedoes
@@ -261,7 +266,9 @@ class WoWsGenerate:
 
         # join same weapons together into one dict
         return self._merge(weapons)
+    #endregion
 
+    #region Ship Components
     def _unpack_ship_components(self, module_name: str, module_type: str, ship: dict, params: dict) -> dict:
         # TODO: how to air defense here??
         """
@@ -452,11 +459,22 @@ class WoWsGenerate:
         elif 'wcs' in module_type:
             # TODO: not sure what this does
             pass
+        elif 'shield' in module_type:
+            # TODO: not sure what this does
+            pass
+        elif 'phaserLasers' in module_type:
+            # TODO: not sure what this does
+            pass
+        elif 'photonTorpedoes' in module_type:
+            # TODO: not sure what this does
+            pass
         else:
             raise Exception('Unknown module type: {}'.format(module_type))
 
         return {module_name: ship_components}
+    #endregion
 
+    #region Consumables
     def _unpack_consumables(self, abilities_dict: dict) -> list:
         """
         Unpack consumables
@@ -473,7 +491,9 @@ class WoWsGenerate:
                 ability_list.append({'name': a[0], 'type': a[1]})
             consumables.append(ability_list)
         return consumables
+    #endregion
 
+    #region Ship Params
     def _unpack_ship_params(self, item: dict, params: dict) -> dict:
         # get the structure overall
         # self._tree(item, depth=2, show_value=True)
@@ -493,7 +513,7 @@ class WoWsGenerate:
         ship_params['index'] = ship_index
         ship_params['tier'] = item['level']
 
-        # region and type + their lang key
+        # !region and type + their lang key
         nation = item['typeinfo']['nation']
         species = item['typeinfo']['species']
         self._game_info['regions'][nation] = True
@@ -608,7 +628,9 @@ class WoWsGenerate:
         if len(air_defense) > 0:
             ship_params['airDefense'] = air_defense
         return {ship_id: ship_params}
+    #endregion
 
+    #region Achievements
     def _unpack_achievements(self, item: dict, key: str) -> dict:
         """
         The app will handle icon, achievement name, and description
@@ -627,7 +649,9 @@ class WoWsGenerate:
         achievements['id'] = item['id']
         achievements['constants'] = item['constants']
         return {key: achievements}
+    # endregion
 
+    #region Exterior
     def _unpack_exteriors(self, item: dict, key: str) -> dict:
         """
         Unpack flags, camouflage and permoflages
@@ -670,7 +694,9 @@ class WoWsGenerate:
         # exterior['name'] = item['name']
         # exterior['name'] = item['name']
         return {key: exterior}
+    #endregion
 
+    #region Modernization
     def _unpack_modernization(self, item: dict, params: dict) -> dict:
         """
         Unpack ship upgrades
@@ -732,7 +758,9 @@ class WoWsGenerate:
         if len(excludes_id) > 0:
             modernization['excludes'] = excludes_id
         return {name: modernization}
+    #endregion
 
+    #region Weapons
     def _unpack_weapons(self, item: dict, key: str) -> dict:
         """
         Unpack all weapons (anti-air, main battery, seondaries, torpedoes and more)
@@ -764,7 +792,9 @@ class WoWsGenerate:
             # unknown weapon type
             raise Exception('Unknown weapon type: {}'.format(weapon_type))
         return {key: weapon}
+    #endregion
 
+    #region Shells
     def _unpack_shells(self, item: dict) -> dict:
         """
         Unpack shells, HE & AP shells, HE & AP bombs and more
@@ -870,12 +900,18 @@ class WoWsGenerate:
         elif projectile_type == 'PlaneSeaMine':
             # TODO: we don't do this for now
             pass
+        elif projectile_type == 'PhotonTorpedo':
+            # TODO: we don't do this for now
+            # what is this??
+            pass
         else:
             # unknown projectile type
             raise Exception(
                 'Unknown projectile type: {}'.format(projectile_type))
         return {key: projectile}
+    #endregion
 
+    #region Aircraft
     def _unpack_aircrafts(self, item: dict, key: str) -> dict:
         """
         Unpack aircraft, like fighter, bomber, and more.
@@ -930,7 +966,9 @@ class WoWsGenerate:
         else:
             raise Exception('Unknown aircraft type: {}'.format(aircraft_type))
         return {key: aircraft}
+    #endregion
 
+    #region Ability
     def _unpack_abilities(self, item: dict, key: str) -> dict:
         """
         Unpack abilities / consumables, like smoke screen, sonar, radar and more.
@@ -1025,7 +1063,9 @@ class WoWsGenerate:
 
         abilities['abilities'] = ability_dict
         return {key: abilities}
+    #endregion
 
+    #region Game Map
     def _unpack_game_map(self) -> dict:
         """
         Unpack the game map
@@ -1041,7 +1081,9 @@ class WoWsGenerate:
                 curr_map['description'] = lang_name + '_DESCR'
                 game_map[map_name] = curr_map
         return game_map
+    #endregion
 
+    #region Commander Skills
     def _unpack_commander_skills(self, item: dict) -> dict:
         """
         Unpack the commander skills
@@ -1050,7 +1092,9 @@ class WoWsGenerate:
         for key in item:
             skills[key] = item[key]
         return skills
+    #endregion
 
+    #region Alias IJN
     def _unpack_japanese_alias(self, item: dict, lang: dict) -> dict:
         """
         Unpack the japanese ship alias
@@ -1058,7 +1102,9 @@ class WoWsGenerate:
         ship_id = item['id']
         ship_index = item['index']
         return {ship_id: {'alias': lang[self._IDS(ship_index)]}}
+    #endregion
 
+    #region Lang
     def _unpack_language(self) -> list:
         """
         Get extra strings we need for the app
@@ -1069,7 +1115,9 @@ class WoWsGenerate:
                 'IDS_UNITS', 'IDS_UNITS_SECOND',
                 # generic strings
                 'IDS_SHIPS', 'IDS_BATTLES']
+    #endregion
 
+    #region Convert Game Info
     def _convert_game_info(self):
         """
         Convert game_info from dicts to lists
@@ -1079,9 +1127,11 @@ class WoWsGenerate:
 
         self._game_info['regions'] = list(regions.keys())
         self._game_info['types'] = list(types.keys())
+    #endregion
 
     # %%
 
+    #region Core Generation
     def generate(self, game_path: str):
         if self._params is None:
             raise Exception('Call read() first')
@@ -1296,11 +1346,13 @@ class WoWsGenerate:
         # TODO: to be added to app/data/
         self._write_json(wowsinfo, 'wowsinfo.json')
         print("Done")
+    #endregion
 
-
+#region Main
 # %%
 if __name__ == '__main__':
     import sys
     path = sys.argv[1]
     generate = WoWsGenerate()
     generate.read().generate(path)
+#endregion
