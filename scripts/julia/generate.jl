@@ -9,8 +9,8 @@ using Glob
 
 struct WoWsGenerate
     lang_keys::Vector{String}
-    modifiers::Dict{Any, Any}
-    game_info::Dict{String, Dict{String, Any}}
+    modifiers::Dict{Any,Any}
+    game_info::Dict{String,Dict{String,Any}}
 
     WoWsGenerate() = new([], Dict(), Dict("regions" => Dict(), "types" => Dict()))
 end
@@ -27,11 +27,11 @@ function read(self::WoWsGenerate)
 end
 
 
-regions::Dict{Any, Any}
-types::Dict{Any, Any}
+regions::Dict{Any,Any}
+types::Dict{Any,Any}
 
 function GameInfo()
-    new(Dict{Any, Any}(), Dict{Any, Any}())
+    new(Dict{Any,Any}(), Dict{Any,Any}())
 end
 
 """
@@ -50,6 +50,7 @@ return self
 Helper functions
 """
 
+function _read_lang(self, language::String)::Dict
     return _read_json("langs/$(language)_lang.json")
 end
 
@@ -57,7 +58,7 @@ function _read_supported_langs(self)
     """
     Read all language files and return a dict
     """
-    lang_dict = Dict{String, Any}()
+    lang_dict = Dict{String,Any}()
     for lang in self._list_dir("langs")
         if occursin(".git", lang)
             continue
@@ -79,6 +80,7 @@ function _read_json(filename::String)::Dict
     return json_dict
 end
 
+function _read_gameparams()
     return JSON.parsefile("GameParams-0.json")
 end
 
@@ -90,21 +92,25 @@ function write_json(data::Dict, filename::String)
     end
 end
 
+function _sizeof_json(filename::String)
     """
     Get the size of a json file
     """
     return filesize(filename) / 1024 / 1024
 end
 
+function _list_dir(dir::String)
     """
     List all files in a directory
     """
     return readdir(dir)
 end
 
+function _roundUp(num::Float64, digits::Int)::Float64
     return round(num, digits)
 end
 
+function _match(text::String, patterns::Vector{String}, method::Function)::Bool
     """
     Match text with patterns
     """
@@ -116,6 +122,7 @@ end
     return false
 end
 
+function _tree(data::Dict, depth::Int=2, tab::Int=0, show_value::Bool=false)
     """
     Show the structure tree of a dict. This is useful when analysing the data.
     """
@@ -129,7 +136,7 @@ end
         end
         return
     end
-    
+
     if !isa(data, Dict)
         if data == ""
             println("\t"^tab, "- empty string")
@@ -145,6 +152,10 @@ end
     end
 end
 
+function _merge(weapons::Vector{Dict})
+    """
+    join same weapons together into one dict
+    """
     merged = []
     counter = []
     for w in keys(weapons)
@@ -173,19 +184,20 @@ end
     return merged
 end
 
+function _IDS(key::String)::String
     return "IDS_" * uppercase(key)
 end
 
-function _unpack_air_defense(module::Dict, params::Dict)
+function _unpack_air_defense(ship_module::Dict, params::Dict)
     """
-    Unpack air defense info from module and return air_defense dict
+    Unpack air defense info from ship_module and return air_defense dict
     """
     air_defense = Dict()
     near = Vector{Dict}()
     medium = Vector{Dict}()
     far = Vector{Dict}()
-    
-    for (aura_key, aura) in module
+
+    for (aura_key, aura) in ship_module
         if !(isa(aura, Dict) && haskey(aura, "type") && aura["type"] in ["far", "medium", "near"])
             continue
         end
@@ -224,7 +236,7 @@ function _unpack_air_defense(module::Dict, params::Dict)
         aa_guns_info = Vector{Dict}()
         for aa_gun in aa_guns
             gun_dict = Dict()
-            gun = module[aa_gun]
+            gun = ship_module[aa_gun]
             gun_dict["ammo"] = gun["name"]
             gun_dict["each"] = Int(gun["numBarrels"])
             gun_dict["reload"] = Float64(gun["shotDelay"])
@@ -266,19 +278,19 @@ function _unpack_air_defense(module::Dict, params::Dict)
     return air_defense
 end
 
-function _unpack_guns_torpedoes(module::Dict)
+function _unpack_guns_torpedoes(ship_module::Dict)
     """
     Unpack guns and torpedoes
     """
     weapons = []
     # check if
-    for weapon_key in keys(module)
+    for weapon_key in keys(ship_module)
         if !occursin("HP", weapon_key)
             continue
         end
 
         # check each gun / torpedo
-        weapon_module = module[weapon_key]
+        weapon_module = ship_module[weapon_key]
         if !isa(weapon_module, Dict)
             throw(Exception("weapon_module is not a dict"))
         end
@@ -302,110 +314,110 @@ end
 function _unpack_ship_components(module_name::String, module_type::String, ship::Dict, params::Dict)
     ship_components = Dict()
 
-    module = ship[module_name]
-    
+    ship_module = ship[module_name]
+
     if occursin("hull", module_type)
-        ship_components["health"] = module["health"]
-        flood_nodes = module["floodNodes"]
+        ship_components["health"] = ship_module["health"]
+        flood_nodes = ship_module["floodNodes"]
         flood_probability = flood_nodes[1][1]
         torpedo_protection = 100 - flood_probability * 3 * 100
-        
+
         if torpedo_protection >= 1
             ship_components["protection"] = round(torpedo_protection)
         end
 
         concealment = Dict()
-        visibility = module["visibilityFactor"]
-        visibility_plane = module["visibilityFactorByPlane"]
-        fire_coeff = module["visibilityCoefFire"]
-        fire_coeff_plane = module["visibilityCoefFireByPlane"]
-        visibility_submarine = module["visibilityFactorsBySubmarine"]["PERISCOPE"]
-        
+        visibility = ship_module["visibilityFactor"]
+        visibility_plane = ship_module["visibilityFactorByPlane"]
+        fire_coeff = ship_module["visibilityCoefFire"]
+        fire_coeff_plane = ship_module["visibilityCoefFireByPlane"]
+        visibility_submarine = ship_module["visibilityFactorsBySubmarine"]["PERISCOPE"]
+
         concealment["sea"] = round(visibility)
         concealment["plane"] = round(visibility_plane)
-        concealment["seaInSmoke"] = round(module["visibilityCoefGKInSmoke"])
-        concealment["planeInSmoke"] = round(module["visibilityCoefGKByPlane"])
+        concealment["seaInSmoke"] = round(ship_module["visibilityCoefGKInSmoke"])
+        concealment["planeInSmoke"] = round(ship_module["visibilityCoefGKByPlane"])
         concealment["submarine"] = round(visibility_submarine)
         concealment["seaFireCoeff"] = fire_coeff
         concealment["planeFireCoeff"] = fire_coeff_plane
-        
-        if haskey(module, "SubmarineBattery")
-            concealment["coeffSeaUnderwaterDepths"] = module["visibilityCoeffUnderwaterDepths"]
-            concealment["coeffPlanUnderwaterDepths"] = module["visibilityCoeffUnderwaterDepths"]
+
+        if haskey(ship_module, "SubmarineBattery")
+            concealment["coeffSeaUnderwaterDepths"] = ship_module["visibilityCoeffUnderwaterDepths"]
+            concealment["coeffPlanUnderwaterDepths"] = ship_module["visibilityCoeffUnderwaterDepths"]
         end
-        
+
         ship_components["visibility"] = concealment
 
         mobility = Dict()
-        mobility["speed"] = module["maxSpeed"]
-        
-        if haskey(module, "SubmarineBattery")
-            buoyancy_states = module["buoyancyStates"]
+        mobility["speed"] = ship_module["maxSpeed"]
+
+        if haskey(ship_module, "SubmarineBattery")
+            buoyancy_states = ship_module["buoyancyStates"]
             if haskey(buoyancy_states, "DEEP_WATER_INVUL")
                 speed_offset = buoyancy_states["DEEP_WATER_INVUL"][2]
                 mobility["speedUnderwater"] = round(mobility["speed"] * speed_offset)
             end
         end
-        
-        mobility["turningRadius"] = module["turningRadius"]
-        mobility["rudderTime"] = round(module["rudderTime"] / 1.305)
+
+        mobility["turningRadius"] = ship_module["turningRadius"]
+        mobility["rudderTime"] = round(ship_module["rudderTime"] / 1.305)
         ship_components["mobility"] = mobility
 
-        if haskey(module, "SubmarineBattery")
+        if haskey(ship_module, "SubmarineBattery")
             submarine_battery = Dict()
-            submarine_battery["capacity"] = module["SubmarineBattery"]["capacity"]
-            submarine_battery["regen"] = module["SubmarineBattery"]["regenRate"]
+            submarine_battery["capacity"] = ship_module["SubmarineBattery"]["capacity"]
+            submarine_battery["regen"] = ship_module["SubmarineBattery"]["regenRate"]
             ship_components["submarineBattery"] = submarine_battery
         end
     elseif occursin("artillery", module_type)
         artillery = Dict()
-        artillery["range"] = module["maxDist"]
-        artillery["sigma"] = module["sigmaCount"]
-        artillery["guns"] = _unpack_guns_torpedoes(module)
-        
-        if haskey(module, "BurstArtilleryModule")
-            artillery["burst"] = module["BurstArtilleryModule"]
+        artillery["range"] = ship_module["maxDist"]
+        artillery["sigma"] = ship_module["sigmaCount"]
+        artillery["guns"] = _unpack_guns_torpedoes(ship_module)
+
+        if haskey(ship_module, "BurstArtilleryModule")
+            artillery["burst"] = ship_module["BurstArtilleryModule"]
         end
-        
+
         ship_components = merge(ship_components, artillery)
 
-        air_defense = _unpack_air_defense(module, params)
+        air_defense = _unpack_air_defense(ship_module, params)
         ship_components = merge(ship_components, air_defense)
     elseif occursin("atba", module_type)
         secondaries = Dict()
-        secondaries["range"] = module["maxDist"]
-        secondaries["sigma"] = module["sigmaCount"]
-        secondaries["guns"] = _unpack_guns_torpedoes(module)
+        secondaries["range"] = ship_module["maxDist"]
+        secondaries["sigma"] = ship_module["sigmaCount"]
+        secondaries["guns"] = _unpack_guns_torpedoes(ship_module)
         ship_components = merge(ship_components, secondaries)
 
-        air_defense = _unpack_air_defense(module, params)
+        air_defense = _unpack_air_defense(ship_module, params)
         ship_components = merge(ship_components, air_defense)
     elseif occursin("torpedoes", module_type)
         torpedo = Dict()
-        torpedo["singleShot"] = module["useOneShot"]
-        torpedo["launchers"] = _unpack_guns_torpedoes(module)
+        torpedo["singleShot"] = ship_module["useOneShot"]
+        torpedo["launchers"] = _unpack_guns_torpedoes(ship_module)
         ship_components = merge(ship_components, torpedo)
     elseif occursin("airDefense", module_type)
-        air_defense = _unpack_air_defense(module, params)
+        air_defense = _unpack_air_defense(ship_module, params)
         ship_components = merge(ship_components, air_defense)
     elseif occursin("airSupport", module_type)
         air_support = Dict()
-        plane_name = module["planeName"]
+        plane_name = ship_module["planeName"]
         air_support["plane"] = plane_name
         plane_name_title = _IDS(plane_name)
         air_support["name"] = plane_name_title
-        push!(global._lang_keys, plane_name_title)
+        push!(self._lang_keys, plane_name_title)
 
-        air_support["reload"] = module["reloadTime"]
-        air_support["range"] = round(module["maxDist"] / 1000)
-        air_support["chargesNum"] = module["chargesNum"]
+        air_support["reload"] = ship_module["reloadTime"]
+        air_support["range"] = round(ship_module["maxDist"] / 1000)
+        air_support["chargesNum"] = ship_module["chargesNum"]
         ship_components = merge(ship_components, air_support)
     elseif occursin("depthCharges", module_type)
         depth_charge = Dict()
-        depth_charge["reload"] = module["reloadTime"]
+        depth_charge["reload"] = ship_module["reloadTime"]
         total_bombs = 0
-        
-        for (launcher_key, launcher) in module
+
+        for (launcher_key, launcher) in ship_module
             if !(isa(launcher, Dict))
                 continue
             end
@@ -417,39 +429,39 @@ function _unpack_ship_components(module_name::String, module_type::String, ship:
 
             total_bombs += launcher["numBombs"]
         end
-        
-        total_bombs *= module["numShots"]
+
+        total_bombs *= ship_module["numShots"]
         depth_charge["bombs"] = total_bombs
-        depth_charge["groups"] = module["maxPacks"]
+        depth_charge["groups"] = ship_module["maxPacks"]
         ship_components = merge(ship_components, depth_charge)
     elseif occursin("fireControl", module_type)
-        ship_components = module
+        ship_components = ship_module
     elseif occursin("flightControl", module_type)
         # No operation
     elseif module_type in ["torpedoBomber", "diveBomber", "fighter", "skipBomber"]
-        ship_components = module["planes"]
+        ship_components = ship_module["planes"]
     elseif occursin("pinger", module_type)
         pinger = Dict()
-        pinger["reload"] = module["waveReloadTime"]
-        pinger["range"] = module["waveDistance"]
-        sectors = module["sectorParams"]
-        
+        pinger["reload"] = ship_module["waveReloadTime"]
+        pinger["range"] = ship_module["waveDistance"]
+        sectors = ship_module["sectorParams"]
+
         if length(sectors) != 2
             throw(ErrorException("pinger has more than 2 sectors"))
         end
 
         pinger["lifeTime1"] = sectors[1]["lifetime"]
         pinger["lifeTime2"] = sectors[2]["lifetime"]
-        pinger["speed"] = module["waveParams"][1]["waveSpeed"][1]
+        pinger["speed"] = ship_module["waveParams"][1]["waveSpeed"][1]
         ship_components = merge(ship_components, pinger)
     elseif occursin("engine", module_type)
-        speedCoef = module["speedCoef"]
+        speedCoef = ship_module["speedCoef"]
         if speedCoef != 0
             ship_components["speedCoef"] = speedCoef
         end
     elseif occursin("specials", module_type)
-        if haskey(module, "RageMode")
-            ship_components["rageMode"] = module["RageMode"]
+        if haskey(ship_module, "RageMode")
+            ship_components["rageMode"] = ship_module["RageMode"]
         end
     elseif occursin("airArmament", module_type)
         # No operation
@@ -476,23 +488,24 @@ function _unpack_ship_components(module_name::String, module_type::String, ship:
     elseif occursin("photonTorpedoes", module_type)
         # No operation
     else
-        throw(ErrorException("Unknown module type: $module_type"))
+        throw(ErrorException("Unknown ship_module type: $module_type"))
     end
 
     return Dict(module_name => ship_components)
 end
 
+function _unpack_consumables(abilities_dict::Dict)
     """
     Unpack consumables
     """
-    consumables = Vector{Vector{Dict{Symbol, String}}}()
+    consumables = Vector{Vector{Dict{Symbol,String}}}()
     for (ability_key, ability_slot) in abilities_dict
         abilities = ability_slot[:abils]
         if isempty(abilities)
             continue
         end
 
-        ability_list = Vector{Dict{Symbol, String}}()
+        ability_list = Vector{Dict{Symbol,String}}()
         for a in abilities
             push!(ability_list, Dict(:name => a[1], :type => a[2]))
         end
@@ -630,10 +643,11 @@ function _unpack_ship_params(self, item::Dict, params::Dict)
     return Dict(ship_id => ship_params)
 end
 
+function _unpack_achievements(self, item::Dict)
     """
     The app will handle icon, achievement name, and description
     """
-    achievements = Dict{String, Any}()
+    achievements = Dict{String,Any}()
     name = uppercase(item["uiName"])
     lang_name = "IDS_ACHIEVEMENT_" * name
     description = "IDS_ACHIEVEMENT_DESCRIPTION_" * name
@@ -649,13 +663,14 @@ end
     return Dict(key => achievements)
 end
 
+function _unpack_flags_camouflages(self, item::Dict, key::String)
     """
     Unpack flags, camouflage and permoflages
     """
-    exterior = Dict{String, Any}()
+    exterior = Dict{String,Any}()
     exterior_type = item["typeinfo"]["species"]
     exterior["type"] = exterior_type
-    
+
     # NOTE: ENSIGN should never be included in the app due to lots of issues
     if exterior_type == "Ensign"
         return Dict()
@@ -671,12 +686,12 @@ end
     if costCR >= 0
         exterior["costCR"] = costCR
     end
-    
+
     costGold = item["costGold"]
     if costGold >= 0
         exterior["costGold"] = costGold
     end
-    
+
     # NOTE: this is gone after 0.11.6 update ONLY for camouflages
     if haskey(item, "modifiers") && length(item["modifiers"]) > 0
         exterior["modifiers"] = item["modifiers"]
@@ -711,7 +726,7 @@ function _unpack_modernization(self, item::Dict, params::Dict)
     push!(self._lang_keys, lang_name)
     push!(self._lang_keys, description)
 
-    modernization = Dict{String, Any}()
+    modernization = Dict{String,Any}()
     modernization["slot"] = slot
     modernization["id"] = item["id"]
     modernization["name"] = lang_name
@@ -772,6 +787,7 @@ function _unpack_modernization(self, item::Dict, params::Dict)
     return Dict(name => modernization)
 end
 
+function _unpack_ships(self, item::Dict, params::Dict)
     """
     Unpack all weapons (anti-air, main battery, secondaries, torpedoes and more)
     """
@@ -801,11 +817,11 @@ end
     return Dict(key => weapon)
 end
 
-function _unpack_shells(item::Dict{String, Any})::Dict{String, Any}
+function _unpack_shells(item::Dict{String,Any})::Dict{String,Any}
     """
     Unpack shells, HE & AP shells, HE & AP bombs and more
     """
-    projectile = Dict{String, Any}()
+    projectile = Dict{String,Any}()
     ammo_type = item["ammoType"]
     projectile["ammoType"] = ammo_type
     projectile["speed"] = item["bulletSpeed"]
@@ -838,7 +854,7 @@ function _unpack_shells(item::Dict{String, Any})::Dict{String, Any}
     diameter = item["bulletDiametr"]
     projectile["diameter"] = diameter
     if ammo_type == "AP"
-        ap_info = Dict{String, Any}()
+        ap_info = Dict{String,Any}()
         ap_info["diameter"] = diameter
         # get values needed to calculate the penetration of AP
         ap_info["weight"] = item["bulletMass"]
@@ -854,10 +870,11 @@ function _unpack_shells(item::Dict{String, Any})::Dict{String, Any}
     return projectile
 end
 
+function _unpack_projectiles(self, item::Dict, key::String)
     """
     Unpack all projectiles, like shells, torpedoes, and more. This is launched, fired or emitted? from a weapon.
     """
-    projectile = Dict{String, Any}()
+    projectile = Dict{String,Any}()
     projectile_type = item["typeinfo"]["species"]
     projectile["type"] = projectile_type
     projectile_nation = item["typeinfo"]["nation"]
@@ -920,7 +937,7 @@ function _unpack_aircrafts(self, item::Dict, key::String)
     """
     Unpack aircraft, like fighter, bomber, and more.
     """
-    aircraft = Dict{String, Any}()
+    aircraft = Dict{String,Any}()
     aircraft_type = item["typeinfo"]["species"]
     aircraft["type"] = aircraft_type
     aircraft["nation"] = item["typeinfo"]["nation"]
@@ -937,7 +954,7 @@ function _unpack_aircrafts(self, item::Dict, key::String)
         aircraft["speed"] = item["speedMoveWithBomb"]
         if max_aircraft > 0
             # get information for the CV rework
-            aircraft_rework = Dict{String, Any}()
+            aircraft_rework = Dict{String,Any}()
             aircraft_rework["restoreTime"] = hangarSettings["timeToRestore"]
             aircraft_rework["maxAircraft"] = max_aircraft
 
@@ -978,14 +995,14 @@ function _unpack_abilities(self, item::Dict, key::String)
     """
     Unpack abilities / consumables, like smoke screen, sonar, radar and more.
     """
-    abilities = Dict{String, Any}()
+    abilities = Dict{String,Any}()
     abilities["nation"] = item["typeinfo"]["nation"]
-    
+
     costCR = item["costCR"]
     if costCR > 0
         abilities["costCR"] = costCR
     end
-    
+
     costGold = item["costGold"]
     if costGold > 0
         abilities["costGold"] = costGold
@@ -998,22 +1015,22 @@ function _unpack_abilities(self, item::Dict, key::String)
     abilities["id"] = item["id"]
     abilities["description"] = description
     abilities["icon"] = key
-    abilities["alter"] = Dict{String, Any}()
+    abilities["alter"] = Dict{String,Any}()
     push!(self._lang_keys, name)
     push!(self._lang_keys, description)
 
-    ability_dict = Dict{String, Any}()
+    ability_dict = Dict{String,Any}()
     for item_key in keys(item)
         ability = item[item_key]
         if !isa(ability, Dict)
             continue
         end
-        
+
         if item_key == "typeinfo"
             continue
         end
 
-        current_ability = Dict{String, Any}()
+        current_ability = Dict{String,Any}()
         for ability_key in keys(ability)
             value = ability[ability_key]
             if value == nothing || value == ""
@@ -1030,7 +1047,7 @@ function _unpack_abilities(self, item::Dict, key::String)
             if ability_key in ["descIDs", "titleIDs"]
                 continue
             end
-            
+
             if ability_key == "iconIDs"
                 icon_name = "IDS_DOCK_CONSUME_TITLE_$(uppercase(value))"
                 icon_description = "IDS_DOCK_CONSUME_DESCRIPTION_$(uppercase(value))"
@@ -1096,16 +1113,18 @@ function _unpack_game_map(self)
     return game_map
 end
 
+function _unpack_commander_skills(self, item::Dict)
     """
     Unpack the commander skills
     """
-    skills = Dict{String, Any}()
+    skills = Dict{String,Any}()
     for (key, value) in item
         skills[key] = value
     end
     return skills
 end
 
+function _unpack_japanese_alias(item::Dict, lang::Dict)::Dict
     """
     Unpack the japanese ship alias
     """
@@ -1114,17 +1133,19 @@ end
     return Dict(ship_id => Dict("alias" => lang[_IDS(ship_index)]))
 end
 
+function _unpack_language(self)
     """
     Get extra strings we need for the app
     """
     return ["IDS_SPECTATE_SWITCH_SHIP", "IDS_MODERNIZATIONS", "IDS_MODULE_TYPE_ABILITIES",
-            # units
-            "IDS_SECOND", "IDS_KILOMETER", "IDS_KILOGRAMM", "IDS_KNOT", "IDS_METER_SECOND", "IDS_MILLIMETER", "IDS_METER",
-            "IDS_UNITS", "IDS_UNITS_SECOND",
-            # generic strings
-            "IDS_SHIPS", "IDS_BATTLES"]
+        # units
+        "IDS_SECOND", "IDS_KILOMETER", "IDS_KILOGRAMM", "IDS_KNOT", "IDS_METER_SECOND", "IDS_MILLIMETER", "IDS_METER",
+        "IDS_UNITS", "IDS_UNITS_SECOND",
+        # generic strings
+        "IDS_SHIPS", "IDS_BATTLES"]
 end
 
+function _convert_game_info()
     """
     Convert game_info from dicts to lists
     """
