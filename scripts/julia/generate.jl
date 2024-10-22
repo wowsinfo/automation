@@ -16,7 +16,7 @@ using Glob
 mutable struct WoWsGenerate
     _lang_keys::Vector{String}
     _modifiers::Dict{Any,Any}
-    _game_info::Dict{String,Dict{String,Any}}
+    _game_info::Dict{String,Any}
 
     _params::Dict{Any,Any}
     _params_keys::Vector{String}
@@ -34,7 +34,7 @@ function load_params!(wows::WoWsGenerate)
     println("Reading game params...")
     wows._params = _read_gameparams()
     println("Loaded game params!")
-    wows._params_keys = keys(wows._params)
+    wows._params_keys = collect(keys(wows._params))
     wows._lang = _read_lang("en")
     # get all Japanese ship names
     wows._lang_sg = _read_lang("zh_sg")
@@ -74,9 +74,9 @@ function _read_gameparams()
     return JSON.parsefile("GameParams-0.json")
 end
 
-function _write_json(data::Dict, filename::String)
+function _write_json(data, filename::String)
     json_str = JSON.json(data)
-    open(filename, "w", enc="UTF-8") do f
+    open(filename, "w") do f
         write(f, json_str)
     end
 end
@@ -95,8 +95,8 @@ function _list_dir(dir::String)::Vector{String}
     return readdir(dir)
 end
 
-function round_up(num::Float64, digits::Int=1)::Float64
-    return round(num, digits)
+function round_up(num::Real, digits::Int=1)::Real
+    return round(num, digits=digits)
 end
 
 function _match(text::String, patterns::Vector{String}, method::Function)::Bool
@@ -141,13 +141,12 @@ function _tree(data::Dict, depth::Int=2, tab::Int=0, show_value::Bool=false)
     end
 end
 
-function _merge(weapons::Vector{Dict})
-    """
-    join same weapons together into one dict
-    """
-    merged = []
-    counter = []
-    for w in keys(weapons)
+function _merge(weapons)
+    # Join same weapons together into one dict
+    merged = Vector{Dict{String,Any}}()
+    counter = Int[]
+
+    for w in weapons
         if isempty(merged)
             push!(merged, w)
             push!(counter, 1)
@@ -155,21 +154,24 @@ function _merge(weapons::Vector{Dict})
         end
 
         found = false
-        for m in merged
+        for (i, m) in enumerate(merged)
             if w == m
-                counter[index(merged, m)] += 1
+                counter[i] += 1
                 found = true
                 break
             end
         end
+
         if !found
             push!(merged, w)
             push!(counter, 1)
         end
     end
+
     for (i, m) in enumerate(merged)
         m["count"] = counter[i]
     end
+
     return merged
 end
 
@@ -179,7 +181,7 @@ end
 #endregion
 
 #region Air Defense
-function _unpack_air_defense(ship_module::Dict, params::Dict)
+function _unpack_air_defense(wows::WoWsGenerate, ship_module::Dict, params::Dict)
     """
     Unpack air defense info from ship_module and return air_defense dict
     """
@@ -306,7 +308,7 @@ end
 #endregion
 
 #region Ship Components
-function _unpack_ship_components(module_name::String, module_type::String, ship::Dict, params::Dict)
+function _unpack_ship_components(wows::WoWsGenerate, module_name::String, module_type::String, ship::Dict, params::Dict)
     ship_components = Dict()
 
     ship_module = ship[module_name]
@@ -376,7 +378,7 @@ function _unpack_ship_components(module_name::String, module_type::String, ship:
 
         ship_components = merge(ship_components, artillery)
 
-        air_defense = _unpack_air_defense(ship_module, params)
+        air_defense = _unpack_air_defense(wows, ship_module, params)
         ship_components = merge(ship_components, air_defense)
     elseif occursin("atba", module_type)
         secondaries = Dict()
@@ -385,7 +387,7 @@ function _unpack_ship_components(module_name::String, module_type::String, ship:
         secondaries["guns"] = _unpack_guns_torpedoes(ship_module)
         ship_components = merge(ship_components, secondaries)
 
-        air_defense = _unpack_air_defense(ship_module, params)
+        air_defense = _unpack_air_defense(wows, ship_module, params)
         ship_components = merge(ship_components, air_defense)
     elseif occursin("torpedoes", module_type)
         torpedo = Dict()
@@ -393,7 +395,7 @@ function _unpack_ship_components(module_name::String, module_type::String, ship:
         torpedo["launchers"] = _unpack_guns_torpedoes(ship_module)
         ship_components = merge(ship_components, torpedo)
     elseif occursin("airDefense", module_type)
-        air_defense = _unpack_air_defense(ship_module, params)
+        air_defense = _unpack_air_defense(wows, ship_module, params)
         ship_components = merge(ship_components, air_defense)
     elseif occursin("airSupport", module_type)
         air_support = Dict()
@@ -497,7 +499,7 @@ function _unpack_consumables(abilities_dict::Dict)
     """
     consumables = Vector{Vector{Dict{Symbol,String}}}()
     for (ability_key, ability_slot) in abilities_dict
-        abilities = ability_slot[:abils]
+        abilities = ability_slot["abils"]
         if isempty(abilities)
             continue
         end
@@ -517,7 +519,7 @@ function _unpack_ship_params(wows::WoWsGenerate, item::Dict, params::Dict)
     ship_params = Dict()
     ship_index = item["index"]
     ship_id = item["id"]
-    lang_key = wows._IDS(ship_index)
+    lang_key = _IDS(ship_index)
     ship_params["name"] = lang_key
     ship_params["description"] = lang_key * "_DESCR"
     ship_params["year"] = lang_key * "_YEAR"
@@ -536,8 +538,8 @@ function _unpack_ship_params(wows::WoWsGenerate, item::Dict, params::Dict)
     wows._game_info["types"][species] = true
     ship_params["region"] = nation
     ship_params["type"] = species
-    nation_lang = wows._IDS(nation |> uppercase)
-    species_lang = wows._IDS(species |> uppercase)
+    nation_lang = _IDS(nation |> uppercase)
+    species_lang = _IDS(species |> uppercase)
     ship_params["regionID"] = nation_lang
     ship_params["typeID"] = species_lang
     push!(wows._lang_keys, nation_lang)
@@ -548,7 +550,7 @@ function _unpack_ship_params(wows::WoWsGenerate, item::Dict, params::Dict)
     end
     ship_params["group"] = item["group"]
 
-    consumables = wows._unpack_consumables(item["ShipAbilities"])
+    consumables = _unpack_consumables(item["ShipAbilities"])
     ship_params["consumables"] = consumables
 
     air_defense = Dict()
@@ -575,7 +577,7 @@ function _unpack_ship_params(wows::WoWsGenerate, item::Dict, params::Dict)
         cost["costCR"] = module_cost["costCR"]
         cost["costXP"] = module_cost["costXP"]
 
-        module_info = Dict("cost" => cost)
+        module_info::Dict{String,Any} = Dict("cost" => cost)
 
         module_type = current_module["ucType"]
 
@@ -614,7 +616,7 @@ function _unpack_ship_params(wows::WoWsGenerate, item::Dict, params::Dict)
                 if haskey(component_tree, component_name)
                     continue
                 end
-                component = wows._unpack_ship_components(component_name, component_key, item, params)
+                component = _unpack_ship_components(wows, component_name, component_key, item, params)
 
                 first_value = first(values(component))
                 if length(first_value) == 0
@@ -624,7 +626,7 @@ function _unpack_ship_params(wows::WoWsGenerate, item::Dict, params::Dict)
             end
         end
 
-        moduleName = wows._IDS(module_key)
+        moduleName = _IDS(module_key)
         module_info["name"] = moduleName
         push!(wows._lang_keys, moduleName)
         if haskey(module_tree, module_type)
@@ -644,7 +646,7 @@ end
 #endregion
 
 #region Achievements
-function _unpack_achievements(wows::WoWsGenerate, item::Dict)
+function _unpack_achievements(wows::WoWsGenerate, item::Dict, key::String)
     """
     The app will handle icon, achievement name, and description
     """
@@ -680,7 +682,7 @@ function _unpack_exteriors(wows::WoWsGenerate, item::Dict, key::String)
     end
 
     exterior["id"] = item["id"]
-    name = wows._IDS(key)
+    name = _IDS(key)
     exterior["name"] = name
     push!(wows._lang_keys, name)
     exterior["icon"] = key
@@ -699,7 +701,7 @@ function _unpack_exteriors(wows::WoWsGenerate, item::Dict, key::String)
     if haskey(item, "modifiers") && length(item["modifiers"]) > 0
         exterior["modifiers"] = item["modifiers"]
         # save all the modifiers
-        for modifierKey in exterior["modifiers"]
+        for modifierKey in keys(exterior["modifiers"])
             wows._modifiers[modifierKey] = exterior["modifiers"][modifierKey]
         end
     end
@@ -872,7 +874,7 @@ function _unpack_shells(item::Dict{String,Any})::Dict{String,Any}
         ap_info["krupp"] = item["bulletKrupp"]
         projectile["ap"] = ap_info
         # caliber is not changing, and overmatch should ignore decimals & no rounding because 8.9 is the same as 8
-        overmatch = Int(diameter * 1000 / 14.3)
+        overmatch = floor(Int, diameter * 1000 / 14.3)
         projectile["overmatch"] = overmatch
         projectile["fuseTime"] = item["bulletDetonator"]
     end
@@ -891,7 +893,7 @@ function _unpack_projectiles(wows::WoWsGenerate, item::Dict, key::String)
     projectile_nation = item["typeinfo"]["nation"]
     projectile["nation"] = projectile_nation
 
-    name = wows._IDS(key)
+    name = _IDS(key)
     push!(wows._lang_keys, name)
     projectile["name"] = name
 
@@ -910,16 +912,16 @@ function _unpack_projectiles(wows::WoWsGenerate, item::Dict, key::String)
             projectile["ignoreClasses"] = ignore_classes
         end
     elseif projectile_type == "Artillery"
-        merge!(projectile, wows._unpack_shells(item))
+        merge!(projectile, _unpack_shells(item))
     elseif projectile_type == "Bomb"
         # TODO: need to consider what we want from bomb
-        merge!(projectile, wows._unpack_shells(item))
+        merge!(projectile, _unpack_shells(item))
     elseif projectile_type == "SkipBomb"
         # TODO: same as above
-        merge!(projectile, wows._unpack_shells(item))
+        merge!(projectile, _unpack_shells(item))
     elseif projectile_type == "Rocket"
         # TODO: same as above
-        merge!(projectile, wows._unpack_shells(item))
+        merge!(projectile, _unpack_shells(item))
     elseif projectile_type == "DepthCharge"
         projectile["damage"] = item["alphaDamage"]
         projectile["burnChance"] = item["burnProb"]
@@ -954,7 +956,7 @@ function _unpack_aircrafts(wows::WoWsGenerate, item::Dict, key::String)
     aircraft_type = item["typeinfo"]["species"]
     aircraft["type"] = aircraft_type
     aircraft["nation"] = item["typeinfo"]["nation"]
-    name = wows._IDS(key)
+    name = _IDS(key)
     push!(wows._lang_keys, name)
     aircraft["name"] = name
 
@@ -988,7 +990,7 @@ function _unpack_aircrafts(wows::WoWsGenerate, item::Dict, key::String)
             aircraft_rework["bombName"] = item["bombName"]
 
             # get consumables
-            consumables = wows._unpack_consumables(item["PlaneAbilities"])
+            consumables = _unpack_consumables(item["PlaneAbilities"])
             if length(consumables) > 0
                 aircraft_rework["consumables"] = consumables
             end
@@ -1048,7 +1050,7 @@ function _unpack_abilities(wows::WoWsGenerate, item::Dict, key::String)
         current_ability = Dict{String,Any}()
         for ability_key in keys(ability)
             value = ability[ability_key]
-            if value == nothing || value == ""
+            if value === nothing || value == ""
                 continue
             end
             if ability_key in ["SpecialSoundID", "group"] || occursin("Effect", ability_key)
@@ -1085,7 +1087,7 @@ function _unpack_abilities(wows::WoWsGenerate, item::Dict, key::String)
             end
 
             if ability_key == "fightersName"
-                current_ability[ability_key] = wows._IDS(value)
+                current_ability[ability_key] = _IDS(value)
                 continue
             end
 
@@ -1170,7 +1172,7 @@ end
 #endregion
 
 #region Convert Game Info
-function _convert_game_info()
+function _convert_game_info(wows::WoWsGenerate)
     """
     Convert game_info from dicts to lists
     """
@@ -1202,8 +1204,8 @@ function generate_everything!(wows::WoWsGenerate, game_path::String)
     camoboost = Dict()
     dog_tag = Dict()
 
-    for key in _params_keys
-        item = _params[key]
+    for key in wows._params_keys
+        item = wows._params[key]
         item_type = item["typeinfo"]["type"]
         item_nation = item["typeinfo"]["nation"]
         item_species = item["typeinfo"]["species"]
@@ -1219,19 +1221,19 @@ function generate_everything!(wows::WoWsGenerate, game_path::String)
         end
 
         if item_type == "Ship"
-            ships = merge(ships, _unpack_ship_params(wows::WoWsGenerate, item, _params))
+            ships = merge(ships, _unpack_ship_params(wows::WoWsGenerate, item, wows._params))
             ship_index[item["id"]] = Dict("index" => item["index"], "tier" => item["level"])
 
             if item["typeinfo"]["nation"] == "Japan"
-                alias = merge(alias, _unpack_japanese_alias(item, _lang_sg))
+                alias = merge(alias, _unpack_japanese_alias(item, wows._lang_sg))
             end
         elseif item_type == "Achievement"
-            achievements = merge(achievements, _unpack_achievements(item, key))
+            achievements = merge(achievements, _unpack_achievements(wows, item, key))
         elseif item_type == "Exterior"
-            exteriors = merge(exteriors, _unpack_exteriors(item, key))
+            exteriors = merge(exteriors, _unpack_exteriors(wows, item, key))
         elseif item_type == "Modernization"
-            modernization = _unpack_modernization(wows::WoWsGenerate, item, _params)
-            if nothing(modernization)
+            modernization = _unpack_modernization(wows, item, wows._params)
+            if modernization !== nothing
                 modernizations = merge(modernizations, modernization)
             end
         elseif item_type == "Crew"
@@ -1247,7 +1249,7 @@ function generate_everything!(wows::WoWsGenerate, game_path::String)
             for s in keys(item["Skills"])
                 modifiers = item["Skills"][s]["modifiers"]
                 for m in keys(modifiers)
-                    _modifiers[m] = modifiers[m]
+                    wows._modifiers[m] = modifiers[m]
                 end
             end
         elseif item_type == "Gun"
@@ -1267,7 +1269,7 @@ function generate_everything!(wows::WoWsGenerate, game_path::String)
 
     for camo in keys(camoboost)
         curr = camoboost[camo]
-        curr["title"] = _lang_sg[_IDS(curr["name"])]
+        curr["title"] = wows._lang_sg[_IDS(curr["name"])]
     end
     println("There are $(length(camoboost)) camoboosts in the game")
     _write_json(camoboost, "camoboost.json")
@@ -1294,35 +1296,35 @@ function generate_everything!(wows::WoWsGenerate, game_path::String)
     _write_json(alias, "alias.json")
     println("There are $(length(ship_index)) ship index in the game")
     _write_json(ship_index, "ship_index.json")
-    println("We need $(length(_lang_keys)) language keys")
-    println("There are $(length(_modifiers)) modifiers in the game")
+    println("We need $(length(wows._lang_keys)) language keys")
+    println("There are $(length(wows._modifiers)) modifiers in the game")
 
-    modifiers_copy = copy(_modifiers)
+    modifiers_copy = copy(wows._modifiers)
     for m in keys(modifiers_copy)
         modifier_name = "IDS_PARAMS_MODIFIER_$(uppercase(m))"
-        if !(haskey(_lang_sg, modifier_name))
+        if !(haskey(wows._lang_sg, modifier_name))
             modifier_name *= "_DESTROYER"
         end
-        if !(haskey(_lang_sg, modifier_name))
+        if !(haskey(wows._lang_sg, modifier_name))
             modifier_name = "IDS_$(uppercase(m))"
         end
-        if !(haskey(_lang_sg, modifier_name))
-            _modifiers["$(m)_name"] = "UNKNOWN!!!"
+        if !(haskey(wows._lang_sg, modifier_name))
+            wows._modifiers["$(m)_name"] = "UNKNOWN!!!"
             continue
         end
-        _modifiers["$(m)_name"] = _lang[modifier_name]
+        wows._modifiers["$(m)_name"] = wows._lang[modifier_name]
     end
-    sorted_modifiers = sort(collect(_modifiers))
+    sorted_modifiers = sort(collect(keys(wows._modifiers)))
     _write_json(sorted_modifiers, "modifiers.json")
     println("Save game info")
-    _convert_game_info()
-    _write_json(_game_info, "game_info.json")
+    _convert_game_info(wows)
+    _write_json(wows._game_info, "game_info.json")
 
-    for key in keys(_lang)
+    for key in keys(wows._lang)
         if _match(key, ["IDS_PARAMS_MODIFIER_", "IDS_MODULE_TYPE_", "IDS_CAROUSEL_APPLIED_", "IDS_SHIP_PARAM_", "IDS_SKILL_", "IDS_DOCK_RAGE_MODE_"], (x, y) -> startswith(x, y))
-            push!(_lang_keys, key)
+            push!(wows._lang_keys, key)
         end
-        append!(_lang_keys, _unpack_language(wows))
+        append!(wows._lang_keys, _unpack_language(wows))
     end
 
     lang_file = Dict()
@@ -1332,7 +1334,7 @@ function generate_everything!(wows::WoWsGenerate, game_path::String)
         lang_file[key] = Dict()
     end
 
-    for key in _lang_keys
+    for key in wows._lang_keys
         try
             for lang in all_langs_keys
                 lang_file[lang][key] = all_langs[lang][key]
@@ -1375,11 +1377,13 @@ function generate_everything!(wows::WoWsGenerate, game_path::String)
     wowsinfo["abilities"] = abilities
     wowsinfo["alias"] = alias
     wowsinfo["skills"] = skills
-    wowsinfo["game"] = _game_info
+    wowsinfo["game"] = wows._game_info
 
     game_info_path = joinpath(game_path, "game_info.xml")
+    global game_version
+    global public_test
     open(game_info_path, "r") do f
-        game_info = read!(f, String)
+        game_info = read(f, String)
         game_version = split(game_info, "installed=\"")[2]
         game_version = split(game_version, "\"")[1]
         public_test = occursin("<id>WOWS.PT.PRODUCTION</id>", game_info)
@@ -1391,6 +1395,12 @@ function generate_everything!(wows::WoWsGenerate, game_path::String)
 end
 #endregion
 
+function generate_app(path::String)
+    generate = WoWsGenerate()
+    load_params!(generate)
+    generate_everything!(generate, path)
+end
+
 #region Main
 if abspath(PROGRAM_FILE) == @__FILE__
     if length(ARGS) < 1
@@ -1399,8 +1409,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     end
 
     path = ARGS[1]
-    generate = WoWsGenerate()
-    load_params!(generate)
-    generate_everything!(generate, path)
+    generate_app(path)
 end
 #endregion

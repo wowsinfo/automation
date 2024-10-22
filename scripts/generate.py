@@ -1352,7 +1352,14 @@ class WoWsGenerate:
 # %%
 if __name__ == '__main__':
     import sys
+    import time
+    from juliacall import Main as jl
+    # jl.include('julia/setup.jl')
+    jl.include('julia/generate.jl')
+    start = time.time()
     path = sys.argv[1]
+    # jl.generate_app(path)
     generate = WoWsGenerate()
     generate.read().generate(path)
+    print("Elapsed time: {:.2f} seconds".format(time.time() - start))
 #endregion
