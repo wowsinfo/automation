@@ -468,6 +468,8 @@ class WoWsGenerate:
         elif 'photonTorpedoes' in module_type:
             # TODO: not sure what this does
             pass
+        elif 'innateSkills' in module_type:
+            pass
         else:
             raise Exception('Unknown module type: {}'.format(module_type))
 
