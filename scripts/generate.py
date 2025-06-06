@@ -371,11 +371,13 @@ class WoWsGenerate:
             ship_components.update(air_defense)
         elif 'airSupport' in module_type:
             air_support = {}
-            plane_name = module['planeName']
-            air_support['plane'] = plane_name
-            plane_name_title = self._IDS(plane_name)
-            air_support['name'] = plane_name_title
-            self._lang_keys.append(plane_name_title)
+            # Since June 2025, planeName could be missing somehow...
+            if 'planeName' in module:
+                plane_name = module['planeName']
+                air_support['plane'] = plane_name
+                plane_name_title = self._IDS(plane_name)
+                air_support['name'] = plane_name_title
+                self._lang_keys.append(plane_name_title)
 
             air_support['reload'] = module['reloadTime']
             air_support['range'] = self._roundUp(
