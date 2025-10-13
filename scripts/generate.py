@@ -472,6 +472,9 @@ class WoWsGenerate:
             pass
         elif 'innateSkills' in module_type:
             pass
+        elif 'missiles' in module_type:
+            # what???
+            pass
         else:
             raise Exception('Unknown module type: {}'.format(module_type))
 
@@ -907,6 +910,9 @@ class WoWsGenerate:
         elif projectile_type == 'PhotonTorpedo':
             # TODO: we don't do this for now
             # what is this??
+            pass
+        elif projectile_type == 'Missile':
+            # finally??
             pass
         else:
             # unknown projectile type
