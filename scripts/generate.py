@@ -475,6 +475,9 @@ class WoWsGenerate:
         elif 'missiles' in module_type:
             # what???
             pass
+        elif 'visualCustomizations':
+            # ???
+            pass
         else:
             raise Exception('Unknown module type: {}'.format(module_type))
 
