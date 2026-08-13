@@ -917,6 +917,8 @@ class WoWsGenerate:
         elif projectile_type == 'Missile':
             # finally??
             pass
+        elif projectile_type == 'PlaneDrop':
+            pass
         else:
             # unknown projectile type
             raise Exception(
