@@ -264,6 +264,10 @@ class ItemsMixin:
             # TODO: same as above
             projectile.update(self._unpack_shells(item))
             projectile.update(unpack_shell(item))
+        elif projectile_type == 'PlaneDrop':
+            # new in 15.7: shell-like plane drop payload
+            projectile.update(self._unpack_shells(item))
+            projectile.update(unpack_shell(item))
         elif projectile_type == 'DepthCharge':
             projectile['damage'] = item['alphaDamage']
             projectile['burnChance'] = item['burnProb']
