@@ -4,6 +4,7 @@
 *.bak
 *.live
 *.pt
+*.zst
 *.log
 *.txt
 

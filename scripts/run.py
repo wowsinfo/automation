@@ -133,6 +133,7 @@ def generate(path: str) -> None:
     run_command(python_path + ' unpack.py ' + path)
     run_command(python_path + ' generate.py ' + path)
     run_command(python_path + ' additional.py --all')
+    run_command(python_path + ' compress.py')
 
     if public_test:
         if os.path.exists("wowsinfo.json.pt"):
@@ -158,7 +159,9 @@ def generate(path: str) -> None:
     data_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), folder_name)
     move('./app', os.path.join(data_path, 'app'))
     move('./wowsinfo.json', os.path.join(data_path, 'app/data/wowsinfo.json'))
+    move('./wowsinfo.zst', os.path.join(data_path, 'app/data/wowsinfo.zst'))
     move('./lang.json', os.path.join(data_path, 'app/lang/lang.json'))
+    move('./lang.zst', os.path.join(data_path, 'app/lang/lang.zst'))
 
     # copy over the raw GameParams.data over to the folder
     move('./content/GameParams.data', os.path.join(data_path, 'GameParams.data'))
