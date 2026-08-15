@@ -1,6 +1,8 @@
 """Misc item domains: achievements, exteriors, upgrades, projectiles, aircraft,
 abilities, game map, commander skills, aliases, language (moved from generate.py).
 """
+import os
+
 from domains.aircraft import unpack_aircraft
 from domains.depth_charges import unpack_depth_charge
 from domains.shells import unpack_shell
@@ -473,6 +475,9 @@ class ItemsMixin:
                 lang_name = 'IDS_SPACES/{}'.format(map_name)
                 curr_map['name'] = lang_name
                 curr_map['description'] = lang_name + '_DESCR'
+                # register the map names so they are included in lang.json
+                self._lang_keys.append(lang_name)
+                self._lang_keys.append(lang_name + '_DESCR')
                 game_map[map_name] = curr_map
         return game_map
     #endregion

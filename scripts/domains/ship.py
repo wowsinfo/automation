@@ -219,6 +219,10 @@ class ShipMixin:
             if 'BurstArtilleryModule' in module:
                 # this is now available only for a few ships
                 artillery['burst'] = module['BurstArtilleryModule']
+            if 'SwitchableModeArtilleryModule' in module:
+                # 15.7+: switchable ammo mode (successor of burst), e.g.
+                # Datong alt HE/AP, Oregon alt shells, Zorky burst
+                artillery['switchable'] = module['SwitchableModeArtilleryModule']
             ship_components.update(artillery)
 
             # turret armor belongs to the armor domain
@@ -324,11 +328,18 @@ class ShipMixin:
             pinger['lifeTime2'] = sectors[1]['lifetime']
             # TODO: taking the first value for now, this is metre per second
             pinger['speed'] = module['waveParams'][0]['waveSpeed'][0]
+            if 'rotationSpeed' in module:
+                pinger['traverse'] = module['rotationSpeed']
+            if len(sectors) > 0 and 'width' in sectors[0]:
+                pinger['width'] = sectors[0]['width']
             ship_components.update(pinger)
         elif 'engine' in module_type:
             speedCoef = module['speedCoef']
             if speedCoef != 0:
                 ship_components['speedCoef'] = speedCoef
+            engine_hit_location = module.get('HitLocationEngine')
+            if isinstance(engine_hit_location, dict) and 'armorCoeff' in engine_hit_location:
+                ship_components['engineBlastProtection'] = engine_hit_location['armorCoeff']
         elif 'specials' in module_type:
             # For tier 11s, battleships have a special module. Also, for event ships
             if 'RageMode' in module:

@@ -132,6 +132,7 @@ def generate(path: str) -> None:
     run_command(python_path + ' clean.py')
     run_command(python_path + ' unpack.py ' + path)
     run_command(python_path + ' generate.py ' + path)
+    run_command(python_path + ' assert_data.py')
     run_command(python_path + ' additional.py --all')
     run_command(python_path + ' compress.py')
 

@@ -189,6 +189,9 @@ class WoWsGenerate(HelpersMixin, ShipMixin, ItemsMixin):
                 self._lang_keys.append(key)
             self._lang_keys += self._unpack_language()
 
+        # collect map names (IDS_SPACES/* + _DESCR) into lang.json
+        self._unpack_game_map()
+
         lang_file = {}
         # prepare for all languages
         all_langs = self._read_supported_langs()

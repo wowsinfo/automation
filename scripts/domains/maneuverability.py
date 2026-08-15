@@ -37,6 +37,11 @@ def unpack_maneuverability(hull: dict) -> dict:
         # speed coefficient (the app applies engine modifiers on top)
         maneuverability['maxReverseSpeed'] = _round_up(max_speed / 4 + 4.9)
 
+    # rudder blast protection comes from the steering gear hit location
+    steering = hull.get('SG')
+    if isinstance(steering, dict) and 'armorCoeff' in steering:
+        maneuverability['rudderBlastProtection'] = steering['armorCoeff']
+
     # submarine specific speeds, gated the same way as the existing
     # submarineBattery extraction (SubmarineBattery only exists on subs)
     if 'SubmarineBattery' in hull and max_speed is not None:

@@ -48,6 +48,15 @@ def unpack_torpedo(torpedo: dict) -> dict:
         if raw in torpedo:
             out[name] = torpedo[raw]
 
+    if 'SubmarineTorpedoParams' in torpedo:
+        # per-ping homing data (turning/vertical speeds, search radius/angle,
+        # per-class drop distances) shown by ShipBuilder
+        out['submarineParams'] = torpedo['SubmarineTorpedoParams']
+    if 'bulletSplashCubesDamage' in torpedo:
+        out['splashDamage'] = torpedo['bulletSplashCubesDamage']
+    if 'isInvisible' in torpedo:
+        out['isInvisible'] = torpedo['isInvisible']
+
     ignore_classes = torpedo.get('ignoreClasses')
     if isinstance(ignore_classes, list):
         out['canHitClasses'] = [c for c in SHIP_CLASSES

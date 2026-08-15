@@ -75,6 +75,9 @@ def unpack_main_battery(module: dict) -> dict:
         turret = {'horizSector': entry['horizSector']}
         if 'vertSector' in entry:
             turret['vertSector'] = entry['vertSector']
+        if 'position' in entry:
+            # turret position used for barrel layout diagrams
+            turret['position'] = entry['position']
         firing_arcs[key] = turret
     if len(firing_arcs) > 0:
         battery['firingArcs'] = firing_arcs
