@@ -149,6 +149,10 @@ class ItemsMixin:
         weapon = {}
         weapon_type = item['typeinfo']['species']
         weapon['type'] = weapon_type
+        # localised weapon name, registered so it lands in lang.json
+        name = self._IDS(key)
+        weapon['name'] = name
+        self._lang_keys.append(name)
         if 'ammoList' in item:
             weapon['ammo'] = item['ammoList']
 
@@ -166,6 +170,9 @@ class ItemsMixin:
             pass
         elif weapon_type == 'Secondary':
             # secondaries
+            pass
+        elif weapon_type == 'MissileGun':
+            # missile launcher guns (event / special ships)
             pass
         else:
             # unknown weapon type

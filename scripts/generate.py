@@ -11,6 +11,7 @@ from additional import merge_additional
 
 
 from domains.common import HelpersMixin
+from domains.commanders import default_skills_hash, unpack_commander
 from domains.items import ItemsMixin
 from domains.ship import ShipMixin
 class WoWsGenerate(HelpersMixin, ShipMixin, ItemsMixin):
@@ -55,6 +56,10 @@ class WoWsGenerate(HelpersMixin, ShipMixin, ItemsMixin):
         exteriors = {}
         modernizations = {}
         skills = {}
+        commanders = {}
+        commander_skill_sets = {}
+        commander_default_hash = default_skills_hash(
+            self._params['PAW001_DefaultCrew'])
         weapons = {}
         projectiles = {}
         aircrafts = {}
@@ -107,6 +112,16 @@ class WoWsGenerate(HelpersMixin, ShipMixin, ItemsMixin):
                 if modernization != None:
                     modernizations.update(modernization)
             elif item_type == 'Crew':
+                # every commander with all fields, keyed by index; the
+                # identifier strings are registered for lang.json
+                commander = unpack_commander(
+                    item, key.upper(), commander_skill_sets,
+                    commander_default_hash)
+                if commander is not None:
+                    commanders[key.upper()] = commander
+                    if 'identifier' in commander:
+                        self._lang_keys.append(commander['identifier'])
+
                 if key == 'PAW001_DefaultCrew':
                     # save the shared one
                     skills[key] = item
@@ -121,8 +136,7 @@ class WoWsGenerate(HelpersMixin, ShipMixin, ItemsMixin):
                     for m in modifiers:
                         self._modifiers[m] = modifiers[m]
             elif item_type == 'Gun':
-                # weapons.update(self._unpack_weapons(item, key))
-                continue
+                weapons.update(self._unpack_weapons(item, key))
             elif item_type == 'Projectile':
                 projectiles.update(self._unpack_projectiles(item, key))
             elif item_type == 'Aircraft':
@@ -185,12 +199,12 @@ class WoWsGenerate(HelpersMixin, ShipMixin, ItemsMixin):
 
         for key in self._lang.keys():
             # get all modifiers
-            if self._match(key, ['IDS_PARAMS_MODIFIER_', 'IDS_MODULE_TYPE_', 'IDS_CAROUSEL_APPLIED_', 'IDS_SHIP_PARAM_', 'IDS_SKILL_', 'IDS_DOCK_RAGE_MODE_'], lambda x, y: x.startswith(y)):
+            if self._match(key, ['IDS_PARAMS_MODIFIER_', 'IDS_MODULE_TYPE_', 'IDS_CAROUSEL_APPLIED_', 'IDS_SHIP_PARAM_', 'IDS_SKILL_', 'IDS_DOCK_RAGE_MODE_', 'IDS_CREW_'], lambda x, y: x.startswith(y)):
                 self._lang_keys.append(key)
             self._lang_keys += self._unpack_language()
 
         # collect map names (IDS_SPACES/* + _DESCR) into lang.json
-        self._unpack_game_map()
+        game_maps = self._unpack_game_map()
 
         lang_file = {}
         # prepare for all languages
@@ -227,6 +241,17 @@ class WoWsGenerate(HelpersMixin, ShipMixin, ItemsMixin):
         print("There are {} skills in the game".format(len(skills)))
         self._write_json(skills, 'skills.json')
 
+        # emit canonical skill trees before references so consumers can
+        # resolve skillsRef in a single pass
+        commanders = {
+            key: commanders[key]
+            for key in sorted(
+                commanders,
+                key=lambda k: 0 if 'Skills' in commanders[k] else 1)
+        }
+        print("There are {} commanders in the game".format(len(commanders)))
+        self._write_json(commanders, 'commanders.json')
+
         total_size = 0
         for json_name in glob.glob('*.json'):
             if 'GameParams' in json_name or 'wowsinfo' in json_name:
@@ -241,14 +266,16 @@ class WoWsGenerate(HelpersMixin, ShipMixin, ItemsMixin):
         wowsinfo['achievements'] = achievements
         wowsinfo['exteriors'] = exteriors
         wowsinfo['modernizations'] = modernizations
-        # wowsinfo['weapons'] = weapons
+        wowsinfo['weapons'] = weapons
         wowsinfo['projectiles'] = projectiles
         wowsinfo['aircrafts'] = aircrafts
         wowsinfo['abilities'] = abilitites
         wowsinfo['alias'] = alias
         # wowsinfo['commander_skills'] = commander_skills
+        wowsinfo['commanders'] = commanders
         wowsinfo['skills'] = skills
         wowsinfo['game'] = self._game_info
+        wowsinfo['maps'] = game_maps
         # wowsinfo['game_maps'] = game_maps
 
         # read game_path to get the game version and if it is public test
