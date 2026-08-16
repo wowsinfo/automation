@@ -149,6 +149,8 @@ class ItemsMixin:
         weapon = {}
         weapon_type = item['typeinfo']['species']
         weapon['type'] = weapon_type
+        # numeric id so weapons can be looked up by id like ships
+        weapon['id'] = item['id']
         # localised weapon name, registered so it lands in lang.json
         name = self._IDS(key)
         weapon['name'] = name
@@ -237,6 +239,8 @@ class ItemsMixin:
         projectile['type'] = projectile_type
         projectile_nation = item['typeinfo']['nation']
         projectile['nation'] = projectile_nation
+        # numeric id so projectiles can be looked up by id like ships
+        projectile['id'] = item['id']
 
         name = self._IDS(key)
         self._lang_keys.append(name)
@@ -321,6 +325,8 @@ class ItemsMixin:
         aircraft_type = item['typeinfo']['species']
         aircraft['type'] = aircraft_type
         aircraft['nation'] = item['typeinfo']['nation']
+        # numeric id so aircrafts can be looked up by id like ships
+        aircraft['id'] = item['id']
         name = self._IDS(key)
         self._lang_keys.append(name)
         aircraft['name'] = name
