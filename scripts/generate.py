@@ -198,8 +198,9 @@ class WoWsGenerate(HelpersMixin, ShipMixin, ItemsMixin):
         self._write_json(self._game_info, 'game_info.json')
 
         for key in self._lang.keys():
-            # get all modifiers
-            if self._match(key, ['IDS_PARAMS_MODIFIER_', 'IDS_MODULE_TYPE_', 'IDS_CAROUSEL_APPLIED_', 'IDS_SHIP_PARAM_', 'IDS_SKILL_', 'IDS_DOCK_RAGE_MODE_', 'IDS_CREW_'], lambda x, y: x.startswith(y)):
+            # get all modifiers and battle modes
+            # IDS_DOMINATION_* are battle mode type names (Standard Battle, Asymmetric, ...)
+            if self._match(key, ['IDS_PARAMS_MODIFIER_', 'IDS_MODULE_TYPE_', 'IDS_CAROUSEL_APPLIED_', 'IDS_SHIP_PARAM_', 'IDS_SKILL_', 'IDS_DOCK_RAGE_MODE_', 'IDS_CREW_', 'IDS_DOMINATION_'], lambda x, y: x.startswith(y)):
                 self._lang_keys.append(key)
             self._lang_keys += self._unpack_language()
 

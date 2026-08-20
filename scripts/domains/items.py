@@ -526,7 +526,9 @@ class ItemsMixin:
                 'IDS_SECOND', 'IDS_KILOMETER', 'IDS_KILOGRAMM', 'IDS_KNOT', 'IDS_METER_SECOND', 'IDS_MILLIMETER', 'IDS_METER',
                 'IDS_UNITS', 'IDS_UNITS_SECOND',
                 # generic strings
-                'IDS_SHIPS', 'IDS_BATTLES']
+                'IDS_SHIPS', 'IDS_BATTLES',
+                # battle mode type name for Random Battle (IDS_2D_HUB_RANDOM_BATTLE_BANNER_TITLE)
+                'IDS_2D_HUB_RANDOM_BATTLE_BANNER_TITLE']
     #endregion
 
     #region Convert Game Info
