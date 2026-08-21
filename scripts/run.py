@@ -119,6 +119,23 @@ def move(src: str, dest: str) -> None:
         os.makedirs(folder_path)
     shutil.move(src, dest)
 
+def copy_filtered(src: str, dest: str, keep: list) -> None:
+    """
+    Copy src to dest, keeping only files whose name is in keep list
+    """
+    log("Copying {} to {} filtered by {}".format(src, dest, keep))
+    if not os.path.exists(dest):
+        os.makedirs(dest)
+
+    for root, dirs, files in os.walk(src):
+        rel = os.path.relpath(root, src)
+        dest_root = os.path.join(dest, rel) if rel != '.' else dest
+        for f in files:
+            if f in keep:
+                d = os.path.join(dest_root, f)
+                os.makedirs(os.path.dirname(d), exist_ok=True)
+                shutil.copy2(os.path.join(root, f), d)
+
 def generate(path: str) -> None:
     log("Generating data from {}".format(path))
     public_test = False
@@ -168,7 +185,10 @@ def generate(path: str) -> None:
     # additional resources
     move('./gui/dogTags/medium', os.path.join(data_path, 'shared/dogtags'))
     # copy over scripts to scripts folder
+    copy_filtered('spaces', os.path.join(data_path, 'spaces'), ['space.settings'])
     move('./scripts', os.path.join(data_path, 'scripts'))
+    # move next to scripts
+    move('./gui/data/constants', os.path.join(data_path, 'constants'))
 
     # commit and push
     suffix = 'PT' if public_test else ''
