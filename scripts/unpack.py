@@ -27,6 +27,7 @@ if __name__ == "__main__":
         unpack = WoWsUnpack(game_path)
         unpack.reset()
         _resetDir("scripts")
+        _resetDir("constants")
 
         unpack.unpackGameParams()
         unpack.decodeGameParams()
@@ -36,6 +37,7 @@ if __name__ == "__main__":
 
         unpack.unpackGameIcons()
         unpack.unpack("scripts/*")
+        unpack.unpack("gui/data/constants/*")
         unpack.packAppAssets()
 
         # compress app folder
