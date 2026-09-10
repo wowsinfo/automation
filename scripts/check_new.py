@@ -33,7 +33,14 @@ def compare_new(public_test: bool) -> None:
                 continue
             # check added items
             for data in wowsinfo[item]:
-                if data not in wowsinfo_bak[item]:
+                if (
+                    item in wowsinfo_bak
+                    and data in wowsinfo_bak[item]
+                ):
+                    # remove the added key
+                    if 'added' in wowsinfo[item][data]:
+                        del wowsinfo[item][data]['added']
+                else:
                     wowsinfo[item][data]['added'] = 1
                     try:
                         # get ids_name from data
@@ -48,11 +55,9 @@ def compare_new(public_test: bool) -> None:
                     print('- added', item, name, '({})'.format(data))
                     changes.write('- added {} {} ({})\n'.format(item, name, data))
                     has_changes = True
-                else:
-                    # remove the added key
-                    if 'added' in wowsinfo[item][data]:
-                        del wowsinfo[item][data]['added']
             # also check removed
+            if item not in wowsinfo_bak:
+                continue
             for data in wowsinfo_bak[item]:
                 if data not in wowsinfo[item]:
                     try:
@@ -64,7 +69,7 @@ def compare_new(public_test: bool) -> None:
                     print('- removed', item, name, '({})'.format(data))
                     changes.write('- removed {} {} ({})\n'.format(item, name, data))
                     has_changes = True
-        
+
         if not has_changes:
             print('No changes found')
             changes.write('No Changes')
